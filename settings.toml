@@ -1,0 +1,42 @@
+[default]
+SQLALCHEMY_TRACK_MODIFICATIONS = false
+EMAIL_SUBJECT_PREFIX = "[ATID]"
+MAIL_SERVER = 'smtp.gmail.com'
+MAIL_PORT = 587
+MAIL_USE_TLS = true
+MAIL_USE_SSL = false
+EMAIL_SENDER = "flask_start@teste.com"
+
+TYPE_DATABASE = ''
+USER_DATABASE = 'root'
+PASS_DATABASE = ''
+NAME_DATABASE = ''
+
+LHOST = 'localhost'
+LPORT = '3306'
+ENABLE_SEND_EMAIL = true
+
+[development]
+TESTING = false
+WTF_CSRF_ENABLED = true
+
+TYPE_DATABASE = 'mysql+pymysql'
+NAME_DATABASE = 'name'
+
+[testing]
+TESTING = true
+DEBUG = true
+SQLALCHEMY_TRACK_MODIFICATIONS = false
+WTF_CSRF_ENABLED = false
+#DATABASE CONFIG
+TYPE_DATABASE = 'sqlite'
+NAME_DATABASE = 'app'
+
+[staging]
+value = "------value for staging"
+
+[global]
+value = "------value for global"
+
+[production]
+value = "------value for production"

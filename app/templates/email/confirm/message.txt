@@ -1,0 +1,5 @@
+Hi {{ full_name }},
+Please click the following link to confirm your email address:
+{{ confirm_link }}
+If you received this message by mistake, just ignore.
+this is an automated message, so please don't reply to this email address.

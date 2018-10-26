@@ -1,0 +1,39 @@
+version: '2'
+
+services:
+  redis:
+    image: 'redis:3.0-alpine'
+    command: redis-server --requirepass mypassword
+    volumes:
+      - 'redis:/data'
+
+  website:
+    build: .
+    environment:
+      PYTHONUNBUFFERED: 'true'
+    volumes:
+      - '.:/app'
+    depends_on:
+      - redis
+      - celery
+
+  nginx:
+    image: "nginx:1.13.5"
+    ports:
+      - "8080:80"
+    volumes:
+      - ./conf.d:/etc/nginx/conf.d
+    depends_on: 
+      - website
+    
+  celery:
+    build: .
+    command: pipenv run celery worker -A app.celery --loglevel=info
+    volumes:
+      - '.:/app'
+    depends_on:
+      - redis
+
+volumes:
+  dbdata:
+  redis:
