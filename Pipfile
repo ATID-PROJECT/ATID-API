@@ -1,11 +1,10 @@
 [[source]]
-name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
+name = "pypi"
 
 [packages]
 flask = "*"
-flask-sqlalchemy = "*"
 flask-migrate = "*"
 flask-mail = "*"
 flask-login = "*"
@@ -21,9 +20,11 @@ flask-injector = "*"
 flask-jwt-extended = "*"
 flask-cors = "*"
 flask-restful = "*"
+maya = "*"
+"py2neo" = {git = "https://github.com/technige/py2neo.git"}
 
 [requires]
-python_version = "3.6.5"
+python_version = "3.6"
 
 [dev-packages]
-pylint = "*"
+pylint = "<2.0.0"

@@ -3,7 +3,6 @@ import os
 import subprocess
 from subprocess import Popen
 from .models import *
-from ext.database import SQLAlchemy
 import click
 
 def default_config_app(app):
@@ -19,20 +18,6 @@ def default_config_app(app):
             return response
         return response
     return app
-
-def define_custom_commands(app, db):
-    @app.cli.command()
-    def create_db():
-        #creates a local database.
-        print("===================== BEGIN =====================")
-        os.system('pipenv run flask db init;pipenv run flask db migrate;pipenv run flask db upgrade')
-        Anunciante.insert_default(db)
-        print("===================== FINISH =====================")
-
-    @app.cli.command()
-    def create_db_tests():
-        db.drop_all()
-        db.create_all()
 
     @app.cli.command()
     @click.argument('folder')

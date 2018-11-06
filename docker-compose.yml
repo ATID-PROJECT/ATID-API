@@ -1,11 +1,6 @@
 version: '2'
 
 services:
-  redis:
-    image: 'redis:3.0-alpine'
-    command: redis-server --requirepass mypassword
-    volumes:
-      - 'redis:/data'
 
   website:
     build: .
@@ -14,7 +9,6 @@ services:
     volumes:
       - '.:/app'
     depends_on:
-      - redis
       - celery
 
   nginx:
@@ -31,8 +25,17 @@ services:
     command: pipenv run celery worker -A app.celery --loglevel=info
     volumes:
       - '.:/app'
-    depends_on:
-      - redis
+
+  neo4j:
+    image: neo4j:latest # pull the latest image
+    environment:
+      - NEO4J_AUTH=neo4j/enigma # configure the instance with custom username/password
+      - NEO4J_HEAP_MEMORY=2048 # configure the heap memory
+      - NEO4J_CACHE_MEMORY=1G # configure the cache memory
+    volumes:
+      - ./db/dbms:/data/dbms # provision the volumes
+    ports: 
+      - "7474" # expose the port for the console ui
 
 volumes:
   dbdata:

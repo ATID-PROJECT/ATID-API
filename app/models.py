@@ -1,43 +1,52 @@
-import sys
-from sqlalchemy import Column, Float, ForeignKey, Boolean, DateTime, String, Integer, Text, Numeric, Date, PrimaryKeyConstraint
-from sqlalchemy.orm import relationship
+import maya
 
-from models.base import Model
+from py2neo.ogm import GraphObject, Property, RelatedTo
 
-#usado para serializar datatime
-def dump_datetime(value):
-    if value is None:
-        return None
-    return [value.strftime("%Y-%m-%d"), value.strftime("%H:%M:%S")]
+class BaseModel(GraphObject):
+    """
+    Implements some basic functions to guarantee some standard functionality
+    across all models. The main purpose here is also to compensate for some
+    missing basic features that we expected from GraphObjects, and improve the
+    way we interact with them.
+    """
 
-class Usuario(Model):
-    __tablename__ = "usuario"
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+    
+class User(BaseModel):
 
-    id = Column(Integer,primary_key=True,autoincrement=True)
-    token = Column(String(500))
-    tipo = Column(Integer)
-    nome = Column(String(500))
-    email = Column(String(500))
-    genero = Column(Integer)
-    foto_url = Column(String(500))
+    __primarykey__ = 'email'
 
-    @property
-    def is_authenticated(self):
-        return True
+    email = Property()
+    first_name = Property()
+    last_name = Property()
+    passwod = Property()
 
-    @property
-    def is_active(self):
-        return True
+    def as_dict(self):
+        return {
+            'email': self.email,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+        }
 
-    @property
-    def is_anonymous(self):
-        return False
+    def fetch_by_email(graph, email):
+        return User.match(graph, email).first()
 
-    def get_id(self):
-        try:
-            return unicode(self.id)  # python 2
-        except NameError:
-            return str(self.id)  # python 3
+    def fetch_by_email_and_password(graph, email, password):
+        return User.match(graph, email).where(
+            f'_.email = "{email}" AND _.passwod = "{password}"'
+        ).first()
 
-    def __repr__(self):
-        return '<Usuario %r>' % (self.apelido)
+    def fetch(self, graph):
+        return self.select(graph, self.email).first()
+
+class Activity(BaseModel):
+
+    __primarykey__ = 'name'
+
+    name = Property()
+    all_data = Property()
+
+    attachment = RelatedTo(User)

@@ -6,8 +6,6 @@ import os.path as path
 from .views import start_controller
 from .account import account_controller
 
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, String
 from flask_migrate import Migrate
 from flask_login import LoginManager
 
@@ -23,16 +21,13 @@ from injector import inject
 
 from flask import request
 
-from .manage import define_custom_commands, default_config_app
+from .manage import default_config_app
 from .JWTManager import jwt
 
-from injector import Module, singleton
-
 from flask_cors import CORS
-
-from ext.database import SQLAlchemy
-from models.base import Model
-
+from flask_injector import FlaskInjector
+from py2neo import Graph
+from injector import Module, singleton
 class AppModule(Module):
     def __init__(self, app):
         self.app = app
@@ -42,18 +37,16 @@ class AppModule(Module):
         # We configure the DB here, explicitly, as Flask-SQLAlchemy requires
         # the DB to be configured before request handlers are called.
         db = self.configure_db(self.app)
-        define_custom_commands(self.app, db)
-        binder.bind(SQLAlchemy, to=db, scope=singleton)
+        binder.bind(Graph, to=db, scope=singleton)
 
     def configure_db(self, app):
-        db = SQLAlchemy(session_options={'autocommit': False}, Model=Model)
-        db.init_app(app)
-        migrate = Migrate(app, db)
+        db = Graph(password='admin')
         # make anything
         return db
 
 def create_app():
     app = Flask(__name__)
+    app.config['JWT_SECRET_KEY'] = 'super-secret'
     CORS(app)
     configureDatabase(app)
 
@@ -63,7 +56,7 @@ def create_app():
     app.register_blueprint(start_controller)
 
     FlaskInjector(app=app, modules=[AppModule(app)])
-    
+
     app.url_map.strict_slashes = False
 
     login_manager = LoginManager()
@@ -80,19 +73,8 @@ def create_app():
 
 def configureDatabase(app):
     CONFIG = {
-        'type': settings.TYPE_DATABASE,
-        'user': settings.USER_DATABASE,
         'password': settings.PASS_DATABASE,
-        'db': settings.NAME_DATABASE,
-        'host': settings.LHOST,
-        'port': settings.LPORT,
     }
-    if settings.TYPE_DATABASE=='sqlite':
-        up =  path.abspath(path.join(__file__ ,"../.."))
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///{0}/%(db)s.db'.format(up) % CONFIG
-    else:
-        app.config['SQLALCHEMY_DATABASE_URI'] = '%(type)s://%(user)s:\
-%(password)s@%(host)s:%(port)s/%(db)s' % CONFIG
     #dynamic config
     app.config.from_object(settings)
     
