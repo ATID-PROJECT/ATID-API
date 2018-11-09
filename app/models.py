@@ -9,6 +9,8 @@ class BaseModel(GraphObject):
     missing basic features that we expected from GraphObjects, and improve the
     way we interact with them.
     """
+    created_at = Property()
+    updated_at = Property()
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
@@ -39,14 +41,32 @@ class User(BaseModel):
             f'_.email = "{email}" AND _.passwod = "{password}"'
         ).first()
 
-    def fetch(self, graph):
-        return self.select(graph, self.email).first()
+class SubActivity(BaseModel):
+
+    __primarykey__ = 'id'
+
+    id = Property()
+    all_data = Property()
+
+    def fetch_by_id(graph, user, id, sub_id):
+        return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Activity{id:'%s'})-[r]-(sub:SubActivity{id:'%s'}) return sub.id,sub.all_data " % (user, id, sub_id)).data()
 
 class Activity(BaseModel):
 
-    __primarykey__ = 'name'
+    __primarykey__ = 'id'
 
+    id = Property()
     name = Property()
     all_data = Property()
-
+    
     attachment = RelatedTo(User)
+    subNetworks = RelatedTo(SubActivity)
+
+    def fetch_by_id(graph, user, id):
+        return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Activity{id:'%s'}) return activity.id,activity.name,activity.all_data " % (user, id)).data()
+
+    def update_by_user(graph, user, id, all_data):
+        return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Activity{id:'%s'}) set activity.all_data='%s'" % (user, id, all_data)).data()
+
+    def fetch_all_by_user(graph, email, offset, limit):
+        return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Activity) return activity.id,activity.name SKIP %s LIMIT %s" % (email, offset, limit)).data()

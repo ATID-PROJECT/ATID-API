@@ -3,7 +3,7 @@ import hashlib
 import json
 from flask import Flask, jsonify, request, make_response
 from flask_jwt_extended import (
-    create_access_token,
+    JWTManager, jwt_required, create_access_token,
     get_jwt_identity
 )
 from .UserObject import UserObject
@@ -33,21 +33,73 @@ def make_error(status_code, sub_code, message, action):
     response.status_code = status_code
     return response
 
-@account_controller.route('/users/activity', methods=['POST'])
-def create_activity(db: Graph):
+@account_controller.route('/users/activity/save', methods=['POST'])
+@jwt_required
+def save_activity(db: Graph):
     dataDict = json.loads(request.data)
-    usuario = User.fetch_by_email(db, dataDict['email'] )
+    current_user = get_jwt_identity()
+    # (para fazer) restringir para editar apenas as atividades criadas pelo próprio usuário
+    result = Activity.update_by_user(db, current_user, dataDict['id'], dataDict['data'])
+    return jsonify({"sucess": "activity saved."})
+
+@account_controller.route('/users/activity/get/id', methods=['GET'])
+@jwt_required
+def get_by_id_subActivity(db: Graph):
+    current_user = get_jwt_identity()
+    result = SubActivity.fetch_by_id(db, current_user, request.args.get("id"), request.args.get("id_subnetwork"))
+    return jsonify(result)
+
+@account_controller.route('/users/activity/save', methods=['POST'])
+@jwt_required
+def save_activity(db: Graph):
+    dataDict = json.loads(request.data)
+    current_user = get_jwt_identity()
+    # (para fazer) restringir para editar apenas as atividades criadas pelo próprio usuário
+    result = Activity.update_by_user(db, current_user, dataDict['id'], dataDict['data'])
+    return jsonify({"sucess": "activity saved."})
+
+@account_controller.route('/users/activity/get/id', methods=['GET'])
+@jwt_required
+def get_by_id_activity(db: Graph):
+    current_user = get_jwt_identity()
+    result = Activity.fetch_by_id(db, current_user, request.args.get("id"))
+    return jsonify(result)
+
+
+@account_controller.route('/users/activity/getAll', methods=['GET'])
+@jwt_required
+def getall_activity(db: Graph):
+    current_user = get_jwt_identity()
+    page = int(request.args.get("page"))-1
+    size = int(request.args.get("page_size"))
+    result = Activity.fetch_all_by_user(db, current_user, size*page, size)
+    return jsonify(result)
+    
+
+@account_controller.route('/users/activity/update', methods=['POST'])
+@jwt_required
+def update_activity(db: Graph):
+    current_user = get_jwt_identity()
+    dataDict = json.loads(request.data)
+
+@account_controller.route('/users/activity/create', methods=['POST'])
+@jwt_required
+def create_activity(db: Graph):
+    current_user = get_jwt_identity()
+    dataDict = json.loads(request.data)
+    usuario = User.fetch_by_email(db, current_user )
     if not usuario:
         return jsonify({"error": "`email` são obrigatórios."}), 400
 
     atividade = Activity()
-    atividade.name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(12))
+    atividade.id= ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(18))
+    atividade.name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(18))
     atividade.all_data = ""
     atividade.attachment.add(usuario)
 
     db.push(atividade)
 
-    return jsonify({"sucess": "activity created.", "name":atividade.name})
+    return jsonify({"sucess": "activity created.", "name":atividade.id})
 
 
 @account_controller.route('/users/register', methods=['POST'])
@@ -68,7 +120,7 @@ def register(db: Graph):
     db.push(usuario)
     user = UserObject(username=usuario.email, role='User', permissions=['foo', 'bar'])
 
-    expires = datetime.timedelta(minutes=1)
+    expires = datetime.timedelta(minutes=30)
     access_token = create_access_token(identity=user, expires_delta=expires)
     ret = {'token': access_token}
 
@@ -84,7 +136,7 @@ def login(db: Graph):
 
     user = UserObject(username=usuario.email, role='Admin', permissions=['foo', 'bar'])
 
-    expires = datetime.timedelta(minutes=1)
+    expires = datetime.timedelta(minutes=30)
     access_token = create_access_token(identity=user, expires_delta=expires)
     ret = {'token': access_token, 'username': usuario.email}
     return jsonify(ret), 200
