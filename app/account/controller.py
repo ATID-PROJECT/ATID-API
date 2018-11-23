@@ -33,20 +33,31 @@ def make_error(status_code, sub_code, message, action):
     response.status_code = status_code
     return response
 
-@account_controller.route('/users/activity/save', methods=['POST'])
+@account_controller.route('/users/activity/subnetwork/save', methods=['POST'])
 @jwt_required
-def save_activity(db: Graph):
+def save_subActivity(db: Graph):
     dataDict = json.loads(request.data)
     current_user = get_jwt_identity()
-    # (para fazer) restringir para editar apenas as atividades criadas pelo próprio usuário
-    result = Activity.update_by_user(db, current_user, dataDict['id'], dataDict['data'])
-    return jsonify({"sucess": "activity saved."})
+    SubActivity.update_by_user(db, current_user, dataDict['id_activity'], dataDict['id_subnetwork'], dataDict['data'])
+    print( dataDict['id_subnetwork'] )
+    print( dataDict['data'] )
+    return jsonify({"sucess": "Subnetwork saved."})
 
-@account_controller.route('/users/activity/get/id', methods=['GET'])
+@account_controller.route('/users/activity/subnetwork/get/id', methods=['GET'])
 @jwt_required
 def get_by_id_subActivity(db: Graph):
     current_user = get_jwt_identity()
-    result = SubActivity.fetch_by_id(db, current_user, request.args.get("id"), request.args.get("id_subnetwork"))
+    result = SubActivity.fetch_by_id(db, current_user, request.args.get('id_activity'), request.args.get('id_subnetwork'))
+    if result:
+        result = SubActivity.fetch_by_id(db, current_user, request.args.get("id_activity"), request.args.get("id_subnetwork"))
+    else:
+        sub = SubActivity()
+        sub.uuid = request.args.get('id_subnetwork')
+        sub.all_data = "[]"
+        db.push(sub)
+        SubActivity.create_relationship( db, current_user, request.args.get('id_activity'), request.args.get('id_subnetwork') )
+        result = {'uuid': sub.uuid, 'all_data': "[]"}
+        print( "criado = " + sub.uuid)
     return jsonify(result)
 
 @account_controller.route('/users/activity/save', methods=['POST'])
@@ -74,13 +85,6 @@ def getall_activity(db: Graph):
     size = int(request.args.get("page_size"))
     result = Activity.fetch_all_by_user(db, current_user, size*page, size)
     return jsonify(result)
-    
-
-@account_controller.route('/users/activity/update', methods=['POST'])
-@jwt_required
-def update_activity(db: Graph):
-    current_user = get_jwt_identity()
-    dataDict = json.loads(request.data)
 
 @account_controller.route('/users/activity/create', methods=['POST'])
 @jwt_required
@@ -93,12 +97,12 @@ def create_activity(db: Graph):
 
     atividade = Activity()
     atividade.id= ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(18))
-    atividade.name = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(18))
+    atividade.name = "Sem título"
     atividade.all_data = ""
+    atividade.created_at = datetime.datetime.now().strftime('%F')
+    atividade.updated_at = datetime.datetime.now().strftime('%F')
     atividade.attachment.add(usuario)
-
     db.push(atividade)
-
     return jsonify({"sucess": "activity created.", "name":atividade.id})
 
 
@@ -136,7 +140,7 @@ def login(db: Graph):
 
     user = UserObject(username=usuario.email, role='Admin', permissions=['foo', 'bar'])
 
-    expires = datetime.timedelta(minutes=30)
+    expires = datetime.timedelta(minutes=120)
     access_token = create_access_token(identity=user, expires_delta=expires)
     ret = {'token': access_token, 'username': usuario.email}
     return jsonify(ret), 200
