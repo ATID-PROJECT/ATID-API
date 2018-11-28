@@ -47,6 +47,9 @@ class Activity(BaseModel):
 
     id = Property()
     name = Property()
+    course_id = Property()
+    course_source = Property()
+    plataform = Property()
     all_data = Property()
     
     attachment = RelatedTo(User)

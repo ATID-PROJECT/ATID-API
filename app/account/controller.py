@@ -20,6 +20,23 @@ sys.path.append("..")
 from app.JWTManager import jwt
 import uuid 
 
+import urllib.request, json 
+
+source_moodle = "http://localhost:8090/"
+url_moodle = "webservice/rest/server.php?wstoken={0}&wsfunction={1}&moodlewsrestformat=json"
+
+@account_controller.route('/moodle/get', methods=['GET'])
+@jwt_required
+def getFunctionMoodle():
+    function = request.args.get("function")
+    #change default token to owener token
+    token = "dabfde815d37f639e32db61f420ad46c"
+    print(source_moodle+(url_moodle.format(token, function)))
+    with urllib.request.urlopen(str(source_moodle+(url_moodle.format(token, function)))) as url:
+        data = json.loads(url.read().decode())
+        return json.dumps(data)
+    return jsonify({"error": "`function` são obrigatórios."}), 400
+
 def getHash512(text):
     return hashlib.sha512(str(text).encode("UTF-8")).hexdigest()
 
@@ -97,7 +114,10 @@ def create_activity(db: Graph):
 
     atividade = Activity()
     atividade.id= ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(18))
-    atividade.name = "Sem título"
+    atividade.name = request.form.get("name")
+    atividade.course_id = request.form.get("course_id")
+    atividade.course_source = "localhost:8090"
+    atividade.plataform = request.form.get("plataform")
     atividade.all_data = ""
     atividade.created_at = datetime.datetime.now().strftime('%F')
     atividade.updated_at = datetime.datetime.now().strftime('%F')
