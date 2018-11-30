@@ -57,6 +57,9 @@ class Activity(BaseModel):
     def fetch_by_id(graph, user, id):
         return graph.evaluate("Match (p:User{email:'%s'})-[r]-(activity:Activity{id:'%s'}) return activity " % (user, id))
 
+    def delete_by_user(graph, user, id):
+        return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Activity{id:'%s'}) DELETE activity " % (user, id))
+        
     def update_by_user(graph, user, id, all_data):
         return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Activity{id:'%s'}) set activity.all_data='%s'" % (user, id, all_data)).data()
 

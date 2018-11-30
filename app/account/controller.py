@@ -22,7 +22,7 @@ import uuid
 
 import urllib.request, json 
 
-source_moodle = "http://localhost:8090/"
+source_moodle = "https://good-firefox-42.localtunnel.me"
 url_moodle = "webservice/rest/server.php?wstoken={0}&wsfunction={1}&moodlewsrestformat=json"
 
 @account_controller.route('/moodle/get', methods=['GET'])
@@ -59,6 +59,13 @@ def save_subActivity(db: Graph):
     print( dataDict['id_subnetwork'] )
     print( dataDict['data'] )
     return jsonify({"sucess": "Subnetwork saved."})
+
+@account_controller.route("/users/activity/delete",  methods=['POST'])
+@jwt_required
+def delete_activity(db: Graph):
+    current_user = get_jwt_identity()
+    Activity.delete_by_user(db, current_user, request.form.get("id_activity"))
+    return jsonify({"sucess": "removed."})
 
 @account_controller.route('/users/activity/subnetwork/get/id', methods=['GET'])
 @jwt_required
@@ -114,10 +121,10 @@ def create_activity(db: Graph):
 
     atividade = Activity()
     atividade.id= ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(18))
-    atividade.name = request.form.get("name")
-    atividade.course_id = request.form.get("course_id")
+    atividade.name = dataDict["name"]
+    atividade.course_id = dataDict["course_id"]
     atividade.course_source = "localhost:8090"
-    atividade.plataform = request.form.get("plataform")
+    atividade.plataform = dataDict["plataform"]
     atividade.all_data = ""
     atividade.created_at = datetime.datetime.now().strftime('%F')
     atividade.updated_at = datetime.datetime.now().strftime('%F')
