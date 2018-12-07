@@ -20,6 +20,23 @@ sys.path.append("..")
 from app.JWTManager import jwt
 import uuid 
 
+import urllib.request, json 
+
+source_moodle = "https://good-firefox-42.localtunnel.me"
+url_moodle = "webservice/rest/server.php?wstoken={0}&wsfunction={1}&moodlewsrestformat=json"
+
+@account_controller.route('/moodle/get', methods=['GET'])
+@jwt_required
+def getFunctionMoodle():
+    function = request.args.get("function")
+    #change default token to owener token
+    token = "dabfde815d37f639e32db61f420ad46c"
+    print(source_moodle+(url_moodle.format(token, function)))
+    with urllib.request.urlopen(str(source_moodle+(url_moodle.format(token, function)))) as url:
+        data = json.loads(url.read().decode())
+        return json.dumps(data)
+    return jsonify({"error": "`function` são obrigatórios."}), 400
+
 def getHash512(text):
     return hashlib.sha512(str(text).encode("UTF-8")).hexdigest()
 
@@ -42,6 +59,13 @@ def save_subActivity(db: Graph):
     print( dataDict['id_subnetwork'] )
     print( dataDict['data'] )
     return jsonify({"sucess": "Subnetwork saved."})
+
+@account_controller.route("/users/activity/delete",  methods=['POST'])
+@jwt_required
+def delete_activity(db: Graph):
+    current_user = get_jwt_identity()
+    Activity.delete_by_user(db, current_user, request.form.get("id_activity"))
+    return jsonify({"sucess": "removed."})
 
 @account_controller.route('/users/activity/subnetwork/get/id', methods=['GET'])
 @jwt_required
@@ -97,7 +121,10 @@ def create_activity(db: Graph):
 
     atividade = Activity()
     atividade.id= ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(18))
-    atividade.name = "Sem título"
+    atividade.name = dataDict["name"]
+    atividade.course_id = dataDict["course_id"]
+    atividade.course_source = "localhost:8090"
+    atividade.plataform = dataDict["plataform"]
     atividade.all_data = ""
     atividade.created_at = datetime.datetime.now().strftime('%F')
     atividade.updated_at = datetime.datetime.now().strftime('%F')
