@@ -18,7 +18,7 @@ from py2neo import Relationship, Node
 
 sys.path.append("..")
 from app.JWTManager import jwt
-import uuid 
+import uuid
 
 def getHash512(text):
     return hashlib.sha512(str(text).encode("UTF-8")).hexdigest()
@@ -33,14 +33,41 @@ def make_error(status_code, sub_code, message, action):
     response.status_code = status_code
     return response
 
-@account_controller.route('/users/activity/save', methods=['POST'])
+@account_controller.route('/activity/getAll', methods=['GET'])
 @jwt_required
-def save_activity(db: Graph):
-    dataDict = json.loads(request.data)
+def getAllQUIZ(db: Graph):
     current_user = get_jwt_identity()
-    # (para fazer) restringir para editar apenas as atividades criadas pelo próprio usuário
-    result = Activity.update_by_user(db, current_user, dataDict['id'], dataDict['data'])
-    return jsonify({"sucess": "activity saved."})
+    page = int(request.args.get("page"))-1
+    size = int(request.args.get("page_size"))
+    result = Quiz.fetch_all_by_user(db, current_user, request.args.get("activity_id"), size*page, size)
+    return jsonify(result)
+
+@account_controller.route('/activity/quiz/register', methods=['POST'])
+@jwt_required
+def addQuiz(db: Graph):
+    current_user = get_jwt_identity()
+    dataDict = json.loads(request.data)
+    uuid = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(18))
+
+    quiz = Quiz()
+    quiz.uuid = uuid
+    quiz.name = dataDict['name']
+    quiz.description = dataDict['description']
+    quiz.time_limit = dataDict['time_limit']
+    quiz.time_type  = dataDict['time_type']
+    quiz.open_date = dataDict['open_date']
+    quiz.end_date  = dataDict['end_date']
+    quiz.new_page = dataDict['new_page']
+    quiz.shuffle = dataDict['shuffle']
+    quiz.created_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    quiz.updated_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    db.push(quiz)
+
+    Activity.addQuiz(db, current_user, dataDict['id_activity'] ,uuid)
+    
+    return jsonify({"sucess": "quiz created."})
+
 
 @account_controller.route('/users/activity/get/id', methods=['GET'])
 @jwt_required

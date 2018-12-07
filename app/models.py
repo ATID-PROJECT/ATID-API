@@ -51,6 +51,27 @@ class SubActivity(BaseModel):
     def fetch_by_id(graph, user, id, sub_id):
         return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Activity{id:'%s'})-[r]-(sub:SubActivity{id:'%s'}) return sub.id,sub.all_data " % (user, id, sub_id)).data()
 
+class Quiz(BaseModel):
+    
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    name = Property()
+    description = Property()
+    time_limit = Property()
+    time_type  = Property()
+    open_date = Property()
+    end_date  = Property()
+    new_page = Property()
+    shuffle = Property()
+    
+    def fetch_all_by_user(graph, email, activity, offset, limit):
+        print("Match (p:User{email:'%s'})-[r]-(activity:Activity{id:'%s'})-[r2]-(quiz:Quiz) return quiz SKIP %s LIMIT %s" % (email, activity, offset, limit))
+        print("___________________________")
+        return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Activity{id: '%s'})-[r2]-(quiz:Quiz) return quiz SKIP %s LIMIT %s" % (email, activity, offset, limit)).data()
+
+
 class Activity(BaseModel):
 
     __primarykey__ = 'id'
@@ -61,6 +82,11 @@ class Activity(BaseModel):
     
     attachment = RelatedTo(User)
     subNetworks = RelatedTo(SubActivity)
+    HAS_QUIZ = RelatedTo(Quiz)
+
+    def addQuiz(graph, user, id, quiz_id):
+        print("MATCH (u:User {email:'%s'})-[r]-(a:Activity {id:'%s'}), (quiz:Quiz{uuid: '%s'}) CREATE (a)-[:HAS_QUIZ]-(quiz)"  % (user ,id, quiz_id) )
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Activity {id:'%s'}), (quiz:Quiz{uuid: '%s'}) CREATE (a)-[:HAS_QUIZ]->(quiz)" % (user ,id, quiz_id))
 
     def fetch_by_id(graph, user, id):
         return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Activity{id:'%s'}) return activity.id,activity.name,activity.all_data " % (user, id)).data()
