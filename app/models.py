@@ -43,13 +43,22 @@ class User(BaseModel):
 
 class SubActivity(BaseModel):
 
-    __primarykey__ = 'id'
+    __primarykey__ = 'uuid'
 
-    id = Property()
+    uuid = Property()
     all_data = Property()
 
+    def create_relationship(graph, user, id_network, id_sub_network):
+        graph.run("MATCH (a:Activity)-[re:ATTACHMENT]-(c:User),(b:SubActivity) WHERE a.id='{1}' and c.email='{0}' and b.uuid='{2}' create (a)-[r:SUBNETWORKS]->(b) RETURN a, b".format(user,id_network, id_sub_network)).data()
+
+    def update_by_user(graph, user, id, id_sub, all_data):
+        return graph.run("Match (p:User{email:'%s'})-[r1]-(activity:Activity{id:'%s'})-[r2]-(sub:SubActivity{uuid:'%s'}) set sub.all_data='%s'" % (user, id, id_sub, all_data))
+
     def fetch_by_id(graph, user, id, sub_id):
-        return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Activity{id:'%s'})-[r]-(sub:SubActivity{id:'%s'}) return sub.id,sub.all_data " % (user, id, sub_id)).data()
+        query = "Match (p:User{email:'%s'})-[r1]-(activity:Activity{id:'%s'})-[r2]-(sub:SubActivity{uuid:'%s'}) return sub " % (user, id, sub_id)
+        print( query )
+        print(" ============ ")
+        return graph.evaluate( query )
 
 class Quiz(BaseModel):
     
@@ -71,26 +80,33 @@ class Quiz(BaseModel):
         print("___________________________")
         return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Activity{id: '%s'})-[r2]-(quiz:Quiz) return quiz SKIP %s LIMIT %s" % (email, activity, offset, limit)).data()
 
-
 class Activity(BaseModel):
 
     __primarykey__ = 'id'
 
     id = Property()
     name = Property()
+    course_id = Property()
+    course_source = Property()
+    plataform = Property()
     all_data = Property()
     
     attachment = RelatedTo(User)
     subNetworks = RelatedTo(SubActivity)
     HAS_QUIZ = RelatedTo(Quiz)
 
+    def getQuantity(graph, user):
+        return graph.evaluate("Match (p:User{email:'%s'})-[r]-(activity:Activity) return COUNT(*)" % user)
+
     def addQuiz(graph, user, id, quiz_id):
-        print("MATCH (u:User {email:'%s'})-[r]-(a:Activity {id:'%s'}), (quiz:Quiz{uuid: '%s'}) CREATE (a)-[:HAS_QUIZ]-(quiz)"  % (user ,id, quiz_id) )
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Activity {id:'%s'}), (quiz:Quiz{uuid: '%s'}) CREATE (a)-[:HAS_QUIZ]->(quiz)" % (user ,id, quiz_id))
 
     def fetch_by_id(graph, user, id):
-        return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Activity{id:'%s'}) return activity.id,activity.name,activity.all_data " % (user, id)).data()
+        return graph.evaluate("Match (p:User{email:'%s'})-[r]-(activity:Activity{id:'%s'}) return activity " % (user, id))
 
+    def delete_by_user(graph, user, id):
+        return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Activity{id:'%s'}) DELETE activity " % (user, id))
+        
     def update_by_user(graph, user, id, all_data):
         return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Activity{id:'%s'}) set activity.all_data='%s'" % (user, id, all_data)).data()
 

@@ -18,24 +18,7 @@ from py2neo import Relationship, Node
 
 sys.path.append("..")
 from app.JWTManager import jwt
-import uuid 
-
-import urllib.request, json 
-
-source_moodle = "https://good-firefox-42.localtunnel.me"
-url_moodle = "webservice/rest/server.php?wstoken={0}&wsfunction={1}&moodlewsrestformat=json"
-
-@account_controller.route('/moodle/get', methods=['GET'])
-@jwt_required
-def getFunctionMoodle():
-    function = request.args.get("function")
-    #change default token to owener token
-    token = "dabfde815d37f639e32db61f420ad46c"
-    print(source_moodle+(url_moodle.format(token, function)))
-    with urllib.request.urlopen(str(source_moodle+(url_moodle.format(token, function)))) as url:
-        data = json.loads(url.read().decode())
-        return json.dumps(data)
-    return jsonify({"error": "`function` são obrigatórios."}), 400
+import uuid
 
 def getHash512(text):
     return hashlib.sha512(str(text).encode("UTF-8")).hexdigest()
@@ -50,22 +33,40 @@ def make_error(status_code, sub_code, message, action):
     response.status_code = status_code
     return response
 
-@account_controller.route('/users/activity/subnetwork/save', methods=['POST'])
+@account_controller.route('/activity/getAll', methods=['GET'])
 @jwt_required
-def save_subActivity(db: Graph):
-    dataDict = json.loads(request.data)
+def getAllQUIZ(db: Graph):
     current_user = get_jwt_identity()
-    SubActivity.update_by_user(db, current_user, dataDict['id_activity'], dataDict['id_subnetwork'], dataDict['data'])
-    print( dataDict['id_subnetwork'] )
-    print( dataDict['data'] )
-    return jsonify({"sucess": "Subnetwork saved."})
+    page = int(request.args.get("page"))-1
+    size = int(request.args.get("page_size"))
+    result = Quiz.fetch_all_by_user(db, current_user, request.args.get("activity_id"), size*page, size)
+    return jsonify(result)
 
-@account_controller.route("/users/activity/delete",  methods=['POST'])
+@account_controller.route('/activity/quiz/register', methods=['POST'])
 @jwt_required
-def delete_activity(db: Graph):
+def addQuiz(db: Graph):
     current_user = get_jwt_identity()
-    Activity.delete_by_user(db, current_user, request.form.get("id_activity"))
-    return jsonify({"sucess": "removed."})
+    dataDict = json.loads(request.data)
+    uuid = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(18))
+
+    quiz = Quiz()
+    quiz.uuid = uuid
+    quiz.name = dataDict['name']
+    quiz.description = dataDict['description']
+    quiz.time_limit = dataDict['time_limit']
+    quiz.time_type  = dataDict['time_type']
+    quiz.open_date = dataDict['open_date']
+    quiz.end_date  = dataDict['end_date']
+    quiz.new_page = dataDict['new_page']
+    quiz.shuffle = dataDict['shuffle']
+    quiz.created_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    quiz.updated_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    db.push(quiz)
+
+    Activity.addQuiz(db, current_user, dataDict['id_activity'] ,uuid)
+    
+    return jsonify({"sucess": "quiz created."})
 
 @account_controller.route('/users/activity/subnetwork/get/id', methods=['GET'])
 @jwt_required
@@ -82,7 +83,7 @@ def get_by_id_subActivity(db: Graph):
         SubActivity.create_relationship( db, current_user, request.args.get('id_activity'), request.args.get('id_subnetwork') )
         result = {'uuid': sub.uuid, 'all_data': "[]"}
         print( "criado = " + sub.uuid)
-    return jsonify(result)
+        return jsonify(result)
 
 @account_controller.route('/users/activity/save', methods=['POST'])
 @jwt_required
@@ -109,7 +110,17 @@ def getall_activity(db: Graph):
     size = int(request.args.get("page_size"))
     result = Activity.fetch_all_by_user(db, current_user, size*page, size)
     return jsonify(result)
+    
 
+@account_controller.route('/users/activity/update', methods=['POST'])
+@jwt_required
+def update_activity(db: Graph):
+    current_user = get_jwt_identity()
+    dataDict = json.loads(request.data)
+
+def generateUUID():
+    return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(18))
+    
 @account_controller.route('/users/activity/create', methods=['POST'])
 @jwt_required
 def create_activity(db: Graph):
@@ -120,16 +131,13 @@ def create_activity(db: Graph):
         return jsonify({"error": "`email` são obrigatórios."}), 400
 
     atividade = Activity()
-    atividade.id= ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(18))
-    atividade.name = dataDict["name"]
-    atividade.course_id = dataDict["course_id"]
-    atividade.course_source = "localhost:8090"
-    atividade.plataform = dataDict["plataform"]
+    atividade.id= generateUUID()
+    atividade.name = "Sem título "+str(Activity.getQuantity(db, current_user))
     atividade.all_data = ""
-    atividade.created_at = datetime.datetime.now().strftime('%F')
-    atividade.updated_at = datetime.datetime.now().strftime('%F')
     atividade.attachment.add(usuario)
+
     db.push(atividade)
+
     return jsonify({"sucess": "activity created.", "name":atividade.id})
 
 
@@ -167,7 +175,7 @@ def login(db: Graph):
 
     user = UserObject(username=usuario.email, role='Admin', permissions=['foo', 'bar'])
 
-    expires = datetime.timedelta(minutes=120)
+    expires = datetime.timedelta(minutes=30)
     access_token = create_access_token(identity=user, expires_delta=expires)
     ret = {'token': access_token, 'username': usuario.email}
     return jsonify(ret), 200
