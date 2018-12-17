@@ -25,6 +25,9 @@ import urllib.request, json
 source_moodle = "https://good-firefox-42.localtunnel.me"
 url_moodle = "webservice/rest/server.php?wstoken={0}&wsfunction={1}&moodlewsrestformat=json"
 
+def getCurrentDate():
+    return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
 @account_controller.route('/moodle/get', methods=['GET'])
 @jwt_required
 def getFunctionMoodle():
@@ -52,86 +55,119 @@ def make_error(status_code, sub_code, message, action):
 
 @account_controller.route('/users/activity/subnetwork/save', methods=['POST'])
 @jwt_required
-def save_subActivity(db: Graph):
+def save_SubNetwork(db: Graph):
     dataDict = json.loads(request.data)
     current_user = get_jwt_identity()
-    SubActivity.update_by_user(db, current_user, dataDict['id_activity'], dataDict['id_subnetwork'], dataDict['data'])
+    SubNetwork.update_by_user(db, current_user, dataDict['id_activity'], dataDict['id_subnetwork'], dataDict['data'])
     print( dataDict['id_subnetwork'] )
     print( dataDict['data'] )
     return jsonify({"sucess": "Subnetwork saved."})
 
-@account_controller.route("/users/activity/delete",  methods=['POST'])
+@account_controller.route("/network/delete",  methods=['POST'])
 @jwt_required
-def delete_activity(db: Graph):
+def delete_network(db: Graph):
+    dataDict = json.loads(request.data)
     current_user = get_jwt_identity()
-    Activity.delete_by_user(db, current_user, request.form.get("id_activity"))
-    return jsonify({"sucess": "removed."})
+    Network.delete_by_user(db, current_user, dataDict["id"])
+    return jsonify({"sucess": True, "message":"Rede removida."}), 202
 
 @account_controller.route('/users/activity/subnetwork/get/id', methods=['GET'])
 @jwt_required
-def get_by_id_subActivity(db: Graph):
+def get_by_id_SubNetwork(db: Graph):
     current_user = get_jwt_identity()
-    result = SubActivity.fetch_by_id(db, current_user, request.args.get('id_activity'), request.args.get('id_subnetwork'))
+    result = SubNetwork.fetch_by_id(db, current_user, request.args.get('id_activity'), request.args.get('id_subnetwork'))
     if result:
-        result = SubActivity.fetch_by_id(db, current_user, request.args.get("id_activity"), request.args.get("id_subnetwork"))
+        result = SubNetwork.fetch_by_id(db, current_user, request.args.get("id_activity"), request.args.get("id_subnetwork"))
     else:
-        sub = SubActivity()
+        sub = SubNetwork()
         sub.uuid = request.args.get('id_subnetwork')
         sub.all_data = "[]"
         db.push(sub)
-        SubActivity.create_relationship( db, current_user, request.args.get('id_activity'), request.args.get('id_subnetwork') )
+        SubNetwork.create_relationship( db, current_user, request.args.get('id_activity'), request.args.get('id_subnetwork') )
         result = {'uuid': sub.uuid, 'all_data': "[]"}
         print( "criado = " + sub.uuid)
     return jsonify(result)
 
 @account_controller.route('/users/activity/save', methods=['POST'])
 @jwt_required
-def save_activity(db: Graph):
+def save_Network(db: Graph):
     dataDict = json.loads(request.data)
     current_user = get_jwt_identity()
-    # (para fazer) restringir para editar apenas as atividades criadas pelo próprio usuário
-    result = Activity.update_by_user(db, current_user, dataDict['id'], dataDict['data'])
-    return jsonify({"sucess": "activity saved."})
+    result = Network.update_by_user(db, current_user, dataDict['id'], dataDict['data'], getCurrentDate())
+    return jsonify({"sucess": True, "message": "A Rede de atividades foi salva."})
 
 @account_controller.route('/users/activity/get/id', methods=['GET'])
 @jwt_required
-def get_by_id_activity(db: Graph):
+def get_by_id_Network(db: Graph):
     current_user = get_jwt_identity()
-    result = Activity.fetch_by_id(db, current_user, request.args.get("id"))
+    result = Network.fetch_by_id(db, current_user, request.args.get("id"))
     return jsonify(result)
-
 
 @account_controller.route('/users/activity/getAll', methods=['GET'])
 @jwt_required
-def getall_activity(db: Graph):
+def getall_Network(db: Graph):
     current_user = get_jwt_identity()
     page = int(request.args.get("page"))-1
     size = int(request.args.get("page_size"))
-    result = Activity.fetch_all_by_user(db, current_user, size*page, size)
+    result = Network.fetch_all_by_user(db, current_user, size*page, size)
     return jsonify(result)
+
+def generateUUID():
+    return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(18))
 
 @account_controller.route('/users/activity/create', methods=['POST'])
 @jwt_required
-def create_activity(db: Graph):
+def create_Network(db: Graph):
     current_user = get_jwt_identity()
     dataDict = json.loads(request.data)
     usuario = User.fetch_by_email(db, current_user )
     if not usuario:
         return jsonify({"error": "`email` são obrigatórios."}), 400
 
-    atividade = Activity()
-    atividade.id= ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(18))
-    atividade.name = dataDict["name"]
-    atividade.course_id = dataDict["course_id"]
-    atividade.course_source = "localhost:8090"
-    atividade.plataform = dataDict["plataform"]
-    atividade.all_data = ""
-    atividade.created_at = datetime.datetime.now().strftime('%F')
-    atividade.updated_at = datetime.datetime.now().strftime('%F')
+    atividade = Network()
+    atividade.id = generateUUID()
+    #getQuantity
+    qt = Network.getQuantity(db, current_user)
+    num = str(qt) if qt != 0 else ""
+    atividade.name = "Sem título "+num
+    atividade.all_data = "[]"
+    atividade.created_at = getCurrentDate()
+    atividade.updated_at = getCurrentDate()
     atividade.attachment.add(usuario)
     db.push(atividade)
     return jsonify({"sucess": "activity created.", "name":atividade.id})
 
+@account_controller.route('/questions/getAll', methods=['GET'])
+@jwt_required
+def questions_getall(db: Graph):
+    current_user = get_jwt_identity()
+    page = int(request.args.get("page"))-1
+    size = int(request.args.get("page_size"))
+    network_id = request.args.get("network_id")
+    questions = db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(question) return question SKIP %s LIMIT %s" % (current_user, network_id, page*size, size)).data()
+    return jsonify(questions)
+
+@account_controller.route('/network/quiz/register', methods=['POST'])
+@jwt_required
+def add_quiz(db: Graph):
+    dataDict = json.loads(request.data)
+    current_user = get_jwt_identity()
+    uuid = generateUUID()
+
+    quiz = Quiz()
+    quiz.uuid = uuid
+    quiz.name = dataDict["name"]
+    description = dataDict["description"]
+    time_limit = dataDict["time_limit"]
+    time_type  = dataDict["time_type"]
+    open_date = dataDict["open_date"]
+    end_date  = dataDict["end_date"]
+    new_page = dataDict["new_page"]
+    shuffle = dataDict["shuffle"]
+    db.push(quiz)
+
+    Network.addQuiz(db, current_user, dataDict["id_network"], uuid)
+    return jsonify({"sucess": True})
 
 @account_controller.route('/users/register', methods=['POST'])
 def register(db: Graph):
