@@ -8,24 +8,16 @@ services:
       PYTHONUNBUFFERED: 'true'
     volumes:
       - '.:/app'
-    depends_on:
-      - celery
 
   nginx:
     image: "nginx:1.13.5"
     ports:
-      - "8080:80"
+      - "5000:80"
     volumes:
       - ./conf.d:/etc/nginx/conf.d
     depends_on: 
       - website
     
-  celery:
-    build: .
-    command: pipenv run celery worker -A app.celery --loglevel=info
-    volumes:
-      - '.:/app'
-
   neo4j:
     image: neo4j:latest # pull the latest image
     environment:
@@ -37,6 +29,3 @@ services:
     ports: 
       - "7474" # expose the port for the console ui
 
-volumes:
-  dbdata:
-  redis:
