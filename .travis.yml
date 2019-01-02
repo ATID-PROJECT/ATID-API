@@ -14,8 +14,6 @@ script:
 - make test
 - make format
 before_install:
-  - openssl aes-256-cbc -K $encrypted_77965d5bdd4d_key -iv $encrypted_77965d5bdd4d_iv
-    -in deploy_key.enc -out ./deploy_key -d
   - eval "$(ssh-agent -s)"
   - chmod 600 /tmp/deploy\_rsa
   - ssh-add /tmp/deploy\_rsa
@@ -28,6 +26,7 @@ deploy:
   script: ssh ${DEPLOY_USER}@${DEPLOY_HOST} "cd ${DEPLOY_DIRECTORY}; bash deploy.sh"
   on:
     branch: master
+
 env:
   global:
     secure: qpYYVtkUbydHTukTfY9K83BPOEUv9/hK1uvbhskVXNXhBOCLL4m5brP2gWmFbwpNGcqVJyecXogbuPcnEa8od8Stft2YlgNjOVx0A5bqoCzmWYN3GaSMi/9vsnoSV+3nBT2/TDmxFUhCj0HAvZAuieRQAZRJeOL8VQt0K+ey1XwEYkYRW7pQ53owt+tY3XF8dgxywFjUhtUiyXVMSjjcKzMyFPSDHxDeaE1C5z/9DwZ15nc0DiaiXugO9MyqoXj1FC67sBT2iXtiwVmPQ0M/9RrZoj3Yh0EJsuOOlXW/uJqI4Z0BRyqUezqhD3+rnC1NIWQeIAS5dww/gfrPV54fSCNGkCv+CXrD10eGvz4ZNSsWZJWfgkeFlwIAjt7UnxMRohXsL/l+k6wcSNJsbIyqm7T9fU8W1Ah49JHCG+YteChfbTTYRz1UlvgdNUd4fp87xdJXWGn7NYSje/W+XJV8Tay8XDCIPvbyQkbBjL0ybBHSfdrzf549RIaH5kWUi4sxSoZXbjZzIudnv6m6gPXQsFcRpoeyiWo8NRR+Id+wyjtMIb091+QvL9N3+vpLrqOiZnt53qHAt/rhT6v2BnI9CmoUaprf2P0fSDLrXClsC+SMxk6xspDu1/llo0FTOg0gvcg7775DfIO4xJbIsJ4Bh8d9qq5Hb7cAGD1hECX2QBg=
