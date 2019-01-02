@@ -1,17 +1,30 @@
 sudo: required
-
-language: python
-
+cache: pip
+language:
+  - python
 services:
   - docker
-
-before_install:
-- docker build -t flask-app .
-- docker run -d --name app flask-app
-- docker ps -a
-
+python:
+  - '3.6'
+install:
+  - pip install pipenv
+  - pipenv install --system
+  - pipenv install --dev --system
 script:
-- docker exec app python -m unittest discover
+  - make test
+  - make format
+before_install:
+  - openssl aes-256-cbc -K $encrypted_77965d5bdd4d_key -iv $encrypted_77965d5bdd4d_iv
+    -in deploy_key.enc -out ./deploy_key -d
+  - eval "$(ssh-agent -s)"
+  - chmod 600 /tmp/deploy\_rsa
+  - ssh-add /tmp/deploy\_rsa
+  - echo -e "Host $DEPLOY_HOST\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+  - scp deploy.sh ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_DIRECTORY}
 
-after_script:
-- docker rm -f app
+deploy:
+  provider: script
+  skip_cleanup: true
+  script: ssh ${DEPLOY_USER}@${DEPLOY_HOST} "cd ${DEPLOY_DIRECTORY}; bash deploy.sh"
+  on:
+    branch: master
