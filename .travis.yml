@@ -16,10 +16,12 @@ script:
 before_install:
 - openssl aes-256-cbc -K $encrypted_2f236f9aa2f1_key -iv $encrypted_2f236f9aa2f1_iv
   -in deploy_key.enc -out ./deploy_key -d
-- eval `ssh-agent -s`
-- chmod 600 ./deploy_key
-- echo -e "Host $SERVER_IP_ADDRESS\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-- ssh-add ./deploy_key
+- eval "$(ssh-agent -s)"
+- chmod 600 /tmp/deploy\_rsa
+- ssh-add /tmp/deploy\_rsa
+- echo -e "Host $DEPLOY_HOST\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+- scp deploy.sh ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_DIRECTORY}
+
 deploy:
   provider: script
   skip_cleanup: true
