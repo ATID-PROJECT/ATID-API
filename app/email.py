@@ -4,7 +4,6 @@ from flask import render_template
 from flask_mail import Message, Mail
 
 from dynaconf import settings
-from functools import wraps
 
 from .celery import celery
 import os

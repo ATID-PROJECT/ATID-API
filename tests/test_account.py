@@ -1,6 +1,5 @@
 # tests/test_account.py
 
-import os
 import unittest 
 from app import create_app
 

@@ -11,7 +11,7 @@ test:
 
 .PHONY: unsed
 unsed:
-	autoflake --in-place --remove-unused-variables tests/*.py app/controllers/*/*.py app/*.py
+	autoflake --in-place --remove-unused-variables tests/*.py app/*.py
 
 .PHONY: format
 format: unsed clean

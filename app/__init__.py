@@ -1,7 +1,4 @@
 from flask import Flask
-import os
-import sys
-import os.path as path
 
 from .views import start_controller
 from .account import account_controller

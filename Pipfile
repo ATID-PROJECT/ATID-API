@@ -24,6 +24,8 @@ maya = "*"
 "py2neo" = {git = "https://github.com/technige/py2neo.git"}
 pytest = "*"
 "autopep8" = "*"
+pytest-cov = "*"
+autoflake = "*"
 
 [requires]
 python_version = "3.6"
