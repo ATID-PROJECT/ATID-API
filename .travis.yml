@@ -17,9 +17,9 @@ before_install:
 - openssl aes-256-cbc -K $encrypted_d8254237a9b1_key -iv $encrypted_d8254237a9b1_iv
   -in deploy_key.enc -out ./deploy_key -d 
 - eval "$(ssh-agent -s)"
-- chmod 600 *
+- chmod 600 ./app
 - echo -e "Host $SERVER_IP_ADDRESS\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-- ssh-add ./*
+- ssh-add ./app
 deploy:
   provider: script
   skip_cleanup: true
