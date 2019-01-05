@@ -19,7 +19,7 @@ before_install:
 - eval "$(ssh-agent -s)"
 - chmod 600 ./app
 - echo -e "Host $SERVER_IP_ADDRESS\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-- ssh-add ./app
+- ssh-add -r ./app
 deploy:
   provider: script
   skip_cleanup: true
