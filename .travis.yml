@@ -20,10 +20,10 @@ before_install:
 - chmod 600 ./deploy_key
 - echo -e "Host $SERVER_IP_ADDRESS\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 - ssh-add ./deploy_key
-- scp * ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_DIRECTORY}
+- scp -r /home/travis/build/ATID-PROJECT/flask-api ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_DIRECTORY}
 deploy:
   provider: script
   skip_cleanup: true
-  script: ssh ${DEPLOY_USER}@${DEPLOY_HOST} "cd ${DEPLOY_DIRECTORY}; bash deploy.sh"
+  script: ssh ${DEPLOY_USER}@${DEPLOY_HOST} "cd ${DEPLOY_DIRECTORY}/flask-api; bash deploy.sh"
   on:
     branch: master
