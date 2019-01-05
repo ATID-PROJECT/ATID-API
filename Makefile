@@ -5,10 +5,6 @@ setup: packages
 packages:
 	pipenv lock && pipenv install --system --deploy --ignore-
 	
-.PHONY: test
-test:
-	pytest --verbose --cov=app tests/
-
 .PHONY: unsed
 unsed:
 	autoflake --in-place --remove-unused-variables tests/*.py app/*.py
