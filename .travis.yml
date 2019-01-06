@@ -2,8 +2,6 @@ sudo: required
 cache: pip
 language:
 - python
-services:
-- docker
 python:
 - '3.6'
 install:

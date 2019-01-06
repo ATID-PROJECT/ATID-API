@@ -1,2 +1,1 @@
-docker-compose stop
-docker-compose up -d
+pipenv run gunicorn -b 0.0.0.0:5000 --access-logfile - "run:create_app()"
