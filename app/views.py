@@ -11,4 +11,4 @@ start_controller = Blueprint('start_controller', __name__, template_folder='temp
 
 @start_controller.route('/')
 def index(db: Graph):
-    return "teste"
+    return "página em branco."
