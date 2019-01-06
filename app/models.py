@@ -37,7 +37,8 @@ class User(BaseModel):
         return User.match(graph, email).first()
 
     def fetch_by_email_and_password(graph, email, password):
-        return User.match(graph, email).where( f'_.email = "{email}" AND _.passwod = "{password}"').first()
+        condicao = "_.email = '{0}' AND _.passwod = '{1}'".format(email, password)
+        return User.match(graph, email).where( condicao ).first()
 
 class SubNetwork(BaseModel):
 
