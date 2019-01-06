@@ -3,7 +3,7 @@ setup: packages
 
 .PHONY: packages
 packages:
-	pipenv install
+	pipenv lock && pipenv install --system --deploy --ignore-pipfile
 	
 .PHONY: unsed
 unsed:
