@@ -12,5 +12,5 @@ RUN pip install pipenv
 
 COPY . .
 
-RUN pipenv lock && pipenv install --system --deploy --ignore-pipfile
-CMD pipenv run gunicorn -b 0.0.0.0:5000 --access-logfile - "app:create_app()"
+RUN pipenv install
+CMD pipenv run gunicorn -b 0.0.0.0:5000 --access-logfile - "run:create_app()"

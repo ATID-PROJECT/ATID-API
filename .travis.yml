@@ -23,6 +23,6 @@ before_install:
 deploy:
   provider: script
   skip_cleanup: true
-  script: ssh ${DEPLOY_USER}@${DEPLOY_HOST} "cd ${DEPLOY_DIRECTORY}/flask-api; bash deploy.sh"
+  script: ssh ${DEPLOY_USER}@${DEPLOY_HOST} "cd ${DEPLOY_DIRECTORY}/flask-api/; bash deploy.sh"
   on:
     branch: master

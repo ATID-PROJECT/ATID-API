@@ -5,8 +5,6 @@ services:
   website:
     container_name: flask_image
     build: .
-    environment:
-      PYTHONUNBUFFERED: 'true'
     volumes:
       - '.:/app'
 
@@ -20,15 +18,4 @@ services:
     depends_on: 
       - website
     
-  neo4j:
-    container_name: neo4j
-    image: neo4j:latest # pull the latest image
-    environment:
-      - NEO4J_AUTH=neo4j/enigma # configure the instance with custom username/password
-      - NEO4J_HEAP_MEMORY=2048 # configure the heap memory
-      - NEO4J_CACHE_MEMORY=1G # configure the cache memory
-    volumes:
-      - ./db/dbms:/data/dbms # provision the volumes
-    ports: 
-      - "7474" # expose the port for the console ui
 
