@@ -195,7 +195,6 @@ def register(db: Graph):
 
 @account_controller.route('/users/authenticate', methods=['POST','GET'])
 def login(db: Graph):
-    return "a"
     dataDict = json.loads(request.data)
     
     usuario = User.fetch_by_email_and_password(db, email=dataDict['email'],password=getHash512(dataDict['password']))#Usuario.query.filter_by(email=username,senha=getHash512(password)).first()
