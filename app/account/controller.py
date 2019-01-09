@@ -193,7 +193,7 @@ def register(db: Graph):
 
     return jsonify(ret), 200
 
-@account_controller.route('/users/authenticate', methods=['POST','GET'])
+@account_controller.route('/users/login', methods=['POST','GET'])
 def login(db: Graph):
     return "a"
     dataDict = json.loads(request.data)
