@@ -137,37 +137,6 @@ def create_Network(db: Graph):
     db.push(atividade)
     return jsonify({"sucess": "activity created.", "name":atividade.id})
 
-@account_controller.route('/questions/getAll', methods=['GET'])
-@jwt_required
-def questions_getall(db: Graph):
-    current_user = get_jwt_identity()
-    page = int(request.args.get("page"))-1
-    size = int(request.args.get("page_size"))
-    network_id = request.args.get("network_id")
-    questions = db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(question) return question SKIP %s LIMIT %s" % (current_user, network_id, page*size, size)).data()
-    return jsonify(questions)
-
-@account_controller.route('/network/quiz/register', methods=['POST'])
-@jwt_required
-def add_quiz(db: Graph):
-    dataDict = json.loads(request.data)
-    current_user = get_jwt_identity()
-    uuid = generateUUID()
-
-    quiz = Quiz()
-    quiz.uuid = uuid
-    quiz.name = dataDict["name"]
-    description = dataDict["description"]
-    time_limit = dataDict["time_limit"]
-    time_type  = dataDict["time_type"]
-    open_date = dataDict["open_date"]
-    end_date  = dataDict["end_date"]
-    new_page = dataDict["new_page"]
-    shuffle = dataDict["shuffle"]
-    db.push(quiz)
-
-    Network.addQuiz(db, current_user, dataDict["id_network"], uuid)
-    return jsonify({"sucess": True})
 
 @account_controller.route('/users/register', methods=['POST'])
 def register(db: Graph):
@@ -195,7 +164,6 @@ def register(db: Graph):
 
 @account_controller.route('/users/login', methods=['POST','GET'])
 def login(db: Graph):
-    return "a"
     dataDict = json.loads(request.data)
     
     usuario = User.fetch_by_email_and_password(db, email=dataDict['email'],password=getHash512(dataDict['password']))#Usuario.query.filter_by(email=username,senha=getHash512(password)).first()

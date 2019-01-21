@@ -37,7 +37,7 @@ class AppModule(Module):
         binder.bind(Graph, to=db, scope=singleton)
 
     def configure_db(self, app):
-        db = Graph(host="umurl.com",password='admin')
+        db = Graph(host="umurl.com",password=settings.PASS_DATABASE)
         # make anything
         return db
 

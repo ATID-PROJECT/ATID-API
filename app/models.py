@@ -79,6 +79,60 @@ class Quiz(BaseModel):
         print("___________________________")
         return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Network{id: '%s'})-[r2]-(quiz:Quiz) return quiz SKIP %s LIMIT %s" % (email, activity, offset, limit)).data()
 
+class Chat(BaseModel):
+    
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    name = Property()
+    description = Property()
+
+class Lesson(BaseModel):
+
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    name = Property()
+    description = Property()
+    allow_revison = Property()
+    try_again = Property()
+    max_tnumber = Property()
+    correct_action = Property()
+    num_pages = Property()
+    open_date = Property()
+    end_date = Property()
+    limit_time = Property()
+    time_format = Property()
+    check_open_date = Property()
+    check_end_date = Property()
+    check_format = Property()
+
+class Database(BaseModel):
+
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+    name = Property()
+    description = Property()
+
+    approval_required = Property()
+    allow_edit_approval_entries = Property()
+    allow_comment = Property()
+    required_before_viewing = Property()
+    max_entries = Property()
+
+    open_date = Property()
+    end_date = Property()
+    read_only = Property()
+    read_only_end = Property()
+    
+    check_read_only_end = Property()
+    check_read_only = Property()
+    check_open_date = Property()
+    check_end_date = Property()
+
 class Network(BaseModel):
 
     __primarykey__ = 'id'
@@ -98,6 +152,15 @@ class Network(BaseModel):
 
     def addQuiz(graph, user, id, quiz_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (quiz:Quiz{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(quiz)" % (user ,id, quiz_id))
+
+    def addChat(graph, user, id, chat_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (chat:Chat{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(chat)" % (user ,id, chat_id))
+
+    def addLesson(graph, user, id, lesson_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (lesson:Lesson{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(lesson)" % (user ,id, lesson_id))
+
+    def addDatabase(graph, user, id, database_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (database:Database{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(database)" % (user ,id, database_id))
 
     def fetch_by_id(graph, user, id):
         return graph.evaluate("Match (p:User{email:'%s'})-[r]-(activity:Network{id:'%s'}) return activity " % (user, id))

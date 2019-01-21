@@ -9,7 +9,7 @@ EMAIL_SENDER = "flask_start@teste.com"
 
 TYPE_DATABASE = ''
 USER_DATABASE = 'root'
-PASS_DATABASE = ''
+PASS_DATABASE = 'admin'
 NAME_DATABASE = ''
 
 LHOST = 'localhost'
@@ -26,7 +26,7 @@ NAME_DATABASE = 'name'
 [testing]
 TESTING = true
 DEBUG = true
-SQLALCHEMY_TRACK_MODIFICATIONS = false
+SQLALCHEMY_TRACK_MODIFICATIONS = true
 WTF_CSRF_ENABLED = false
 #DATABASE CONFIG
 TYPE_DATABASE = 'sqlite'
