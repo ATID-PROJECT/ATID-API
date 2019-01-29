@@ -23,13 +23,19 @@ from .JWTManager import jwt
 
 from flask_cors import CORS
 from flask_injector import FlaskInjector
-from py2neo import Graph
+
 from injector import Module, singleton
+
+from flask_restful import Api
+from py2neo import Graph
+
+from .questions import QuizResource, ChatResource, LessonResource, DatabaseResource, ChoiceResource
+
 class AppModule(Module):
     def __init__(self, app):
         self.app = app
 
-    """Configure the application."""
+    #Configure the application.
     def configure(self, binder):
         # We configure the DB here, explicitly, as Flask-SQLAlchemy requires
         # the DB to be configured before request handlers are called.
@@ -37,11 +43,8 @@ class AppModule(Module):
         binder.bind(Graph, to=db, scope=singleton)
 
     def configure_db(self, app):
-<<<<<<< HEAD
         db = Graph(host="umurl.com",password=settings.PASS_DATABASE)
-=======
-        db = Graph(password='admin')
->>>>>>> d3fad8616a8f7ac6ab37b802c4b7a0fce8c9d5aa
+        self.db = db
         # make anything
         return db
 
@@ -56,14 +59,31 @@ def create_app():
     app.register_blueprint(account_controller)
     app.register_blueprint(start_controller)
 
-    FlaskInjector(app=app, modules=[AppModule(app)])
-
+    api = Api(app)
     app.url_map.strict_slashes = False
 
     login_manager = LoginManager()
     login_manager.session_protection = 'strong'
     login_manager.login_view = 'account_controller.login'
     login_manager.init_app(app)
+
+    module_app = AppModule(app)
+    FlaskInjector(app=app, modules=[module_app])
+
+    api.add_resource(QuizResource, '/questions/quiz/', 
+        resource_class_kwargs={ 'database': module_app.db })
+
+    api.add_resource(ChatResource, '/questions/chat/',
+        resource_class_kwargs={ 'database': module_app.db })
+
+    api.add_resource(LessonResource, '/questions/lesson/',
+        resource_class_kwargs={ 'database': module_app.db })
+
+    api.add_resource(DatabaseResource, '/questions/database/',
+        resource_class_kwargs={ 'database': module_app.db })
+
+    api.add_resource(ChoiceResource, '/questions/choice/',
+        resource_class_kwargs={ 'database': module_app.db })
 
     @login_manager.user_loader
     def load_user(user_id):

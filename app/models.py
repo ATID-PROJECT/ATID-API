@@ -73,6 +73,9 @@ class Quiz(BaseModel):
     end_date  = Property()
     new_page = Property()
     shuffle = Property()
+    allow_time_limit = Property()
+    allow_open_data = Property()
+    allow_end_data = Property()
     
     def fetch_all_by_user(graph, email, activity, offset, limit):
         print("Match (p:User{email:'%s'})-[r]-(activity:Network{id:'%s'})-[r2]-(quiz:Quiz) return quiz SKIP %s LIMIT %s" % (email, activity, offset, limit))
@@ -98,16 +101,30 @@ class Lesson(BaseModel):
     description = Property()
     allow_revison = Property()
     try_again = Property()
-    max_tnumber = Property()
+    max_attempts = Property()
     correct_action = Property()
     num_pages = Property()
     open_date = Property()
     end_date = Property()
-    limit_time = Property()
-    time_format = Property()
-    check_open_date = Property()
-    check_end_date = Property()
-    check_format = Property()
+    time_limit = Property()
+    time_type = Property()
+
+    allow_open_data = Property()
+    allow_end_data = Property()
+    allow_time_limit = Property()
+
+class Choice(BaseModel):
+
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    name = Property()
+    description = Property()
+    allow_choice_update = Property()
+    allow_multiple_choices = Property()
+    allow_limit_answers = Property()
+    choice_questions = Property()
 
 class Database(BaseModel):
 
@@ -155,6 +172,9 @@ class Network(BaseModel):
 
     def addChat(graph, user, id, chat_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (chat:Chat{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(chat)" % (user ,id, chat_id))
+
+    def addChoice(graph, user, id, choice_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (choice:Choice{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(choice)" % (user ,id, choice_id))
 
     def addLesson(graph, user, id, lesson_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (lesson:Lesson{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(lesson)" % (user ,id, lesson_id))

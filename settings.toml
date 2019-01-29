@@ -28,9 +28,6 @@ TESTING = true
 DEBUG = true
 SQLALCHEMY_TRACK_MODIFICATIONS = true
 WTF_CSRF_ENABLED = false
-#DATABASE CONFIG
-TYPE_DATABASE = 'sqlite'
-NAME_DATABASE = 'app'
 
 [staging]
 value = "------value for staging"
