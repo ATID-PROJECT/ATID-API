@@ -74,8 +74,8 @@ class Quiz(BaseModel):
     new_page = Property()
     shuffle = Property()
     allow_time_limit = Property()
-    allow_open_data = Property()
-    allow_end_data = Property()
+    allow_open_date = Property()
+    allow_end_date = Property()
     
     def fetch_all_by_user(graph, email, activity, offset, limit):
         print("Match (p:User{email:'%s'})-[r]-(activity:Network{id:'%s'})-[r2]-(quiz:Quiz) return quiz SKIP %s LIMIT %s" % (email, activity, offset, limit))
@@ -109,8 +109,8 @@ class Lesson(BaseModel):
     time_limit = Property()
     time_type = Property()
 
-    allow_open_data = Property()
-    allow_end_data = Property()
+    allow_open_date = Property()
+    allow_end_date = Property()
     allow_time_limit = Property()
 
 class Choice(BaseModel):
@@ -145,10 +145,10 @@ class Database(BaseModel):
     read_only = Property()
     read_only_end = Property()
     
-    check_read_only_end = Property()
-    check_read_only = Property()
-    check_open_date = Property()
-    check_end_date = Property()
+    allow_read_only_end = Property()
+    allow_read_only = Property()
+    allow_open_date = Property()
+    allow_end_date = Property()
 
 class Network(BaseModel):
 

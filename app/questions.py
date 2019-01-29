@@ -67,7 +67,7 @@ class QuizResource(Resource):
         quiz.shuffle = dataDict["shuffle"]
         quiz.allow_time_limit = dataDict["allow_time_limit"]
         quiz.allow_open_data = dataDict["allow_open_data"]
-        quiz.allow_end_data = dataDict["allow_end_data"]
+        quiz.allow_end_date = dataDict["allow_end_date"]
 
         self.db.push(quiz)
 
@@ -91,7 +91,7 @@ class QuizResource(Resource):
         shuffle = dataDict["shuffle"]
         allow_time_limit = dataDict["allow_time_limit"]
         allow_open_data = dataDict["allow_open_data"]
-        allow_end_data = dataDict["allow_end_data"]
+        allow_end_date = dataDict["allow_end_date"]
 
         set_query = f""
 
@@ -105,7 +105,7 @@ class QuizResource(Resource):
             quiz.new_page = '{new_page}',\
             quiz.allow_time_limit = '{allow_time_limit}',\
             quiz.allow_open_data = '{allow_open_data}',\
-            quiz.allow_end_data = '{allow_end_data}',\
+            quiz.allow_end_date = '{allow_end_date}',\
             quiz.shuffle = '{shuffle}' return quiz"
 
         self.db.run(query).data()
@@ -221,7 +221,7 @@ class LessonResource(Resource):
         lesson.time_type = dataDict["time_type"]
 
         lesson.allow_open_data = dataDict["allow_open_data"]
-        lesson.allow_end_data = dataDict["allow_end_data"]
+        lesson.allow_end_date = dataDict["allow_end_date"]
         lesson.allow_time_limit = dataDict["allow_time_limit"]
 
         self.db.push(lesson)
@@ -250,7 +250,7 @@ class LessonResource(Resource):
         time_type = dataDict["time_type"]
 
         allow_open_data = dataDict["allow_open_data"]
-        allow_end_data = dataDict["allow_end_data"]
+        allow_end_date = dataDict["allow_end_date"]
         allow_time_limit = dataDict["allow_time_limit"]
 
         set_query = f""
@@ -268,7 +268,7 @@ class LessonResource(Resource):
             lesson.time_limit = '{time_limit}',\
             lesson.time_type = '{time_type}',\
             lesson.allow_open_data = '{allow_open_data}',\
-            lesson.allow_end_data = '{allow_end_data}',\
+            lesson.allow_end_date = '{allow_end_date}',\
             lesson.allow_time_limit = '{allow_time_limit}'\
                  return lesson"
 
@@ -321,10 +321,10 @@ class DatabaseResource(Resource):
         database.end_date = dataDict["end_date"]
         database.read_only = dataDict["read_only"]
         database.read_only_end = dataDict["read_only_end"]
-        database.check_read_only_end = dataDict["check_read_only_end"]
-        database.check_read_only = dataDict["check_read_only"]
-        database.check_open_date = dataDict["check_open_date"]
-        database.check_end_date = dataDict["check_end_date"]
+        database.allow_read_only_end = dataDict["allow_read_only_end"]
+        database.allow_read_only = dataDict["allow_read_only"]
+        database.allow_open_date = dataDict["allow_open_date"]
+        database.allow_end_date = dataDict["allow_end_date"]
 
         self.db.push(database)
 
@@ -352,10 +352,10 @@ class DatabaseResource(Resource):
         end_date = dataDict["end_date"]
         read_only = dataDict["read_only"]
         read_only_end = dataDict["read_only_end"]
-        check_read_only_end = dataDict["check_read_only_end"]
-        check_read_only = dataDict["check_read_only"]
-        check_open_date = dataDict["check_open_date"]
-        check_end_date = dataDict["check_end_date"]
+        allow_read_only_end = dataDict["allow_read_only_end"]
+        allow_read_only = dataDict["allow_read_only"]
+        allow_open_date = dataDict["allow_open_date"]
+        allow_end_date = dataDict["allow_end_date"]
 
         set_query = f""
 
@@ -371,10 +371,10 @@ class DatabaseResource(Resource):
             database.end_date = '{end_date}',\
             database.read_only = '{read_only}',\
             database.read_only_end = '{read_only_end}',\
-            database.check_read_only_end = '{check_read_only_end}',\
-            database.check_read_only = '{check_read_only}',\
-            database.check_open_date = '{check_open_date}',\
-            database.check_end_date = '{check_end_date}'\
+            database.allow_read_only_end = '{allow_read_only_end}',\
+            database.allow_read_only = '{allow_read_only}',\
+            database.allow_open_date = '{allow_open_date}',\
+            database.allow_end_date = '{allow_end_date}'\
              return database"
 
         self.db.run(query).data()
