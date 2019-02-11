@@ -35,6 +35,16 @@ def questions_getall(db: Graph):
     print(questions, file=sys.stderr)
     return jsonify(questions)
 
+@start_controller.route('/questions/get', methods=['GET'])
+@jwt_required
+def questions_get(db: Graph):
+    current_user = get_jwt_identity()
+    uuid = request.args.get("uuid")
+    network_id = request.args.get("network_id")
+    questions = db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(question{uuid: '%s'}) return question" % (current_user, network_id, uuid)).data()
+    print(questions, file=sys.stderr)
+    return jsonify(questions)
+
 class QuizResource(Resource):
 
     def __init__(self, database):
@@ -66,7 +76,7 @@ class QuizResource(Resource):
         quiz.new_page = dataDict["new_page"]
         quiz.shuffle = dataDict["shuffle"]
         quiz.allow_time_limit = dataDict["allow_time_limit"]
-        quiz.allow_open_data = dataDict["allow_open_data"]
+        quiz.allow_open_date = dataDict["allow_open_date"]
         quiz.allow_end_date = dataDict["allow_end_date"]
 
         self.db.push(quiz)
@@ -90,7 +100,7 @@ class QuizResource(Resource):
         new_page = dataDict["new_page"]
         shuffle = dataDict["shuffle"]
         allow_time_limit = dataDict["allow_time_limit"]
-        allow_open_data = dataDict["allow_open_data"]
+        allow_open_date = dataDict["allow_open_date"]
         allow_end_date = dataDict["allow_end_date"]
 
         set_query = f""
@@ -104,7 +114,7 @@ class QuizResource(Resource):
             quiz.end_date  = '{end_date}',\
             quiz.new_page = '{new_page}',\
             quiz.allow_time_limit = '{allow_time_limit}',\
-            quiz.allow_open_data = '{allow_open_data}',\
+            quiz.allow_open_date = '{allow_open_date}',\
             quiz.allow_end_date = '{allow_end_date}',\
             quiz.shuffle = '{shuffle}' return quiz"
 
@@ -220,7 +230,7 @@ class LessonResource(Resource):
         lesson.time_limit = dataDict["time_limit"]
         lesson.time_type = dataDict["time_type"]
 
-        lesson.allow_open_data = dataDict["allow_open_data"]
+        lesson.allow_open_date = dataDict["allow_open_date"]
         lesson.allow_end_date = dataDict["allow_end_date"]
         lesson.allow_time_limit = dataDict["allow_time_limit"]
 
@@ -249,7 +259,7 @@ class LessonResource(Resource):
         time_limit = dataDict["time_limit"]
         time_type = dataDict["time_type"]
 
-        allow_open_data = dataDict["allow_open_data"]
+        allow_open_date = dataDict["allow_open_date"]
         allow_end_date = dataDict["allow_end_date"]
         allow_time_limit = dataDict["allow_time_limit"]
 
@@ -267,7 +277,7 @@ class LessonResource(Resource):
             lesson.end_date = '{end_date}',\
             lesson.time_limit = '{time_limit}',\
             lesson.time_type = '{time_type}',\
-            lesson.allow_open_data = '{allow_open_data}',\
+            lesson.allow_open_date = '{allow_open_date}',\
             lesson.allow_end_date = '{allow_end_date}',\
             lesson.allow_time_limit = '{allow_time_limit}'\
                  return lesson"

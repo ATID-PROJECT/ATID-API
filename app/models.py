@@ -191,5 +191,8 @@ class Network(BaseModel):
     def update_by_user(graph, user, id, all_data, updated_at):
         return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Network{id:'%s'}) set activity.all_data='%s',activity.updated_at='%s'" % (user, id, all_data, updated_at)).data()
 
+    def update_name_by_user(graph, user, id, new_name, updated_at):
+        return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Network{id:'%s'}) set activity.name='%s',activity.updated_at='%s'" % (user, id, new_name, updated_at)).data()
+
     def fetch_all_by_user(graph, email, offset, limit):
         return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Network) return activity SKIP %s LIMIT %s" % (email, offset, limit)).data()

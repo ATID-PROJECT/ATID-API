@@ -93,7 +93,11 @@ def get_by_id_SubNetwork(db: Graph):
 def save_Network(db: Graph):
     dataDict = json.loads(request.data)
     current_user = get_jwt_identity()
-    result = Network.update_by_user(db, current_user, dataDict['id'], dataDict['data'], getCurrentDate())
+    if 'data' in dataDict:
+        result = Network.update_by_user(db, current_user, dataDict['id'], dataDict['data'], getCurrentDate())
+    if 'name' in dataDict:
+        result = Network.update_name_by_user(db, current_user, dataDict['id'], dataDict['name'], getCurrentDate())
+
     return jsonify({"sucess": True, "message": "A Rede de atividades foi salva."})
 
 @account_controller.route('/users/activity/get/id', methods=['GET'])
