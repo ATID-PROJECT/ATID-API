@@ -100,6 +100,10 @@ def save_Network(db: Graph):
 
     return jsonify({"sucess": True, "message": "A Rede de atividades foi salva."})
 
+@account_controller.route('/getTime', methods=['GET'])
+def getCurrentTime():
+    return jsonify({ "current_time": getCurrentDate() })
+
 @account_controller.route('/users/activity/get/id', methods=['GET'])
 @jwt_required
 def get_by_id_Network(db: Graph):
