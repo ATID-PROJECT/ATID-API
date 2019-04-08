@@ -45,6 +45,67 @@ def questions_get(db: Graph):
     print(questions, file=sys.stderr)
     return jsonify(questions)
 
+class ConditionResource(Resource):
+    
+    def __init__(self, database):
+        # database is a dependency
+        self.db = database
+
+    @jwt_required
+    def get(self):
+        id_activity = request.args.get("id_activity")
+        network_id = request.args.get("network_id")
+        current_user = get_jwt_identity()
+        condition = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_CONDITION]-(con:Condition{id_activity:'%s'}) return con" % (current_user, network_id, id_activity)).data()
+        return jsonify(condition)
+
+    @jwt_required
+    def post(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+
+        print(dataDict, file=sys.stderr)
+        condition = Condition()
+        condition.id_activity = dataDict["id_activity"]
+        condition.name_activity = dataDict["name_activity"]
+        condition.data = str(dataDict["data"])
+
+        self.db.push(condition)
+
+        Network.addCondition(self.db, current_user, dataDict["network_id"], dataDict["id_activity"])
+        return jsonify({"sucess": True})
+
+    @jwt_required
+    def put(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+        network_id = dataDict["network_id"]
+        id_activity = dataDict["id_activity"]
+
+        name = dataDict["name_activity"]
+        data = str(dataDict["data"])
+
+        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_CONDITION]-(condition:Condition{{id_activity:'{id_activity}'}}) \
+            SET condition.name_activity = '{name}',\
+            condition.data = '{data}' return condition"
+
+        self.db.run(query).data()
+
+        return jsonify({"updated": True})
+
+    @jwt_required
+    def delete(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+
+        network_id = dataDict["network_id"]
+        id_activity = dataDict["id_activity"]
+
+        query = f"Match (p:User{{email:'{current_user}'}})-[r1]-(activity:Network{{id:'{network_id}'}})-[r:HAS_CONDITION]-(condition:Condition{{id_activity:'{id_activity}'}}) DETACH DELETE condition "
+        self.db.run(query)
+
+        return jsonify({"Deleted": True})
+
 class QuizResource(Resource):
 
     def __init__(self, database):

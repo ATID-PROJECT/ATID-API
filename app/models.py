@@ -113,6 +113,14 @@ class Lesson(BaseModel):
     allow_end_date = Property()
     allow_time_limit = Property()
 
+class Condition(BaseModel):
+    
+    __primarykey__ = 'id_activity'
+
+    id_activity = Property()
+    name_activity = Property()
+    data = Property()
+
 class Choice(BaseModel):
 
     __primarykey__ = 'uuid'
@@ -169,6 +177,9 @@ class Network(BaseModel):
 
     def addQuiz(graph, user, id, quiz_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (quiz:Quiz{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(quiz)" % (user ,id, quiz_id))
+
+    def addCondition(graph, user, id, condition_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (condition:Condition{id_activity: '%s'}) CREATE (a)-[:HAS_CONDITION]->(condition)" % (user ,id, condition_id))
 
     def addChat(graph, user, id, chat_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (chat:Chat{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(chat)" % (user ,id, chat_id))
