@@ -133,6 +133,7 @@ class FileResource(Resource):
 
         return jsonify({"Deleted": True})
 
+
 class ConditionResource(Resource):
     
     def __init__(self, database):
