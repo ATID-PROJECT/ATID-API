@@ -91,6 +91,43 @@ class Chat(BaseModel):
     name = Property()
     description = Property()
 
+class File(BaseModel):
+    
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    name = Property()
+    description = Property()
+    type_display = Property()
+    type_filter_content = Property()
+
+    #boolean variables
+    show_size = Property()
+    show_type = Property()
+    show_description = Property()
+    show_resource_description = Property()
+
+class URL(BaseModel):
+
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    name = Property()
+    external_url = Property()
+    description = Property()
+
+class Page(BaseModel):
+    
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    name = Property()
+    description = Property()
+    content = Property() 
+
 class Lesson(BaseModel):
 
     __primarykey__ = 'uuid'
@@ -183,6 +220,9 @@ class Network(BaseModel):
 
     def addChat(graph, user, id, chat_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (chat:Chat{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(chat)" % (user ,id, chat_id))
+
+    def addFile(graph, user, id, file_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (file:File{uuid: '%s'}) CREATE (a)-[:HAS_RESOURCE]->(file)" % (user ,id, file_id))
 
     def addChoice(graph, user, id, choice_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (choice:Choice{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(choice)" % (user ,id, choice_id))

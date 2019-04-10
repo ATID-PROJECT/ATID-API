@@ -32,7 +32,16 @@ def questions_getall(db: Graph):
     size = int(request.args.get("page_size"))
     network_id = request.args.get("network_id")
     questions = db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(question) set question.label = labels(question)[0] return question SKIP %s LIMIT %s" % (current_user, network_id, page*size, size)).data()
-    print(questions, file=sys.stderr)
+    return jsonify(questions)
+
+@start_controller.route('/resource/getAll', methods=['GET'])
+@jwt_required
+def resource_getall(db: Graph):
+    current_user = get_jwt_identity()
+    page = int(request.args.get("page"))-1
+    size = int(request.args.get("page_size"))
+    network_id = request.args.get("network_id")
+    questions = db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_RESOURCE]-(resource) set resource.label = labels(resource)[0] return resource SKIP %s LIMIT %s" % (current_user, network_id, page*size, size)).data()
     return jsonify(questions)
 
 @start_controller.route('/questions/get', methods=['GET'])
@@ -44,6 +53,85 @@ def questions_get(db: Graph):
     questions = db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(question{uuid: '%s'}) return question" % (current_user, network_id, uuid)).data()
     print(questions, file=sys.stderr)
     return jsonify(questions)
+
+class FileResource(Resource):
+
+    def __init__(self, database):
+        # database is a dependency
+        self.db = database
+
+    @jwt_required
+    def get(self):
+        uuid = request.args.get("uuid")
+        network_id = request.args.get("network_id")
+        current_user = get_jwt_identity()
+        file = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_RESOURCE]-(file:File{uuid:'%s'}) return file" % (current_user, network_id, uuid)).data()
+        return jsonify(file)
+
+    @jwt_required
+    def post(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+        uuid = generateUUID()
+
+        file = File()
+        file.uuid = uuid
+        file.name = dataDict["name"]
+        file.description = dataDict["description"]
+        file.type_display = dataDict["type_display"]
+        file.type_filter_content = dataDict["type_filter_content"]
+
+        file.show_size = dataDict["show_size"]
+        file.show_type = dataDict["show_type"]
+        file.show_description = dataDict["show_description"]
+        file.show_resource_description = dataDict["show_resource_description"]
+
+        self.db.push(file)
+
+        Network.addFile(self.db, current_user, dataDict["network_id"], uuid)
+        return jsonify({"sucess": True})
+
+    @jwt_required
+    def put(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+        network_id = dataDict["network_id"]
+        uuid = dataDict["uuid"]
+
+        name = dataDict["name"]
+        description = dataDict["description"]
+        type_display = dataDict["type_display"]
+        type_filter_content = dataDict["type_filter_content"]
+
+        show_size = dataDict["show_size"]
+        show_type = dataDict["show_type"]
+        show_description = dataDict["show_description"]
+        show_resource_description = dataDict["show_resource_description"]
+
+        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_RESOURCE]-(file:File{{uuid:'{uuid}'}}) \
+            SET file.name = '{name}',\
+            file.description = '{description}'\
+            file.type_display = '{type_display}'\
+            file.type_filter_content = '{type_filter_content}'\
+            file.show_resource_description = '{show_resource_description}'\
+                 return file"
+
+        self.db.run(query).data()
+
+        return jsonify({"updated": True})
+
+    @jwt_required
+    def delete(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+
+        network_id = dataDict["network_id"]
+        uuid = dataDict["uuid"]
+
+        query = f"Match (p:User{{email:'{current_user}'}})-[r1]-(activity:Network{{id:'{network_id}'}})-[r:HAS_RESOURCE]-(file:File{{uuid:'{uuid}'}}) DETACH DELETE file "
+        self.db.run(query)
+
+        return jsonify({"Deleted": True})
 
 class ConditionResource(Resource):
     
