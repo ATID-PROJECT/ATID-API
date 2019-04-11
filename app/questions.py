@@ -98,7 +98,7 @@ class URLResource(Resource):
 
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_RESOURCE]-(url:URL{{uuid:'{uuid}'}}) \
             SET url.name = '{name}',\
-            url.description = '{description}'\
+            url.description = '{description}',\
             url.external_url = '{external_url}'\
                  return url"
 
@@ -163,7 +163,7 @@ class PageResource(Resource):
 
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_RESOURCE]-(page:Page{{uuid:'{uuid}'}}) \
             SET file.name = '{name}',\
-            file.description = '{description}'\
+            file.description = '{description}',\
             file.content = '{content}'\
                  return file"
 
@@ -240,9 +240,9 @@ class FileResource(Resource):
 
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_RESOURCE]-(file:File{{uuid:'{uuid}'}}) \
             SET file.name = '{name}',\
-            file.description = '{description}'\
-            file.type_display = '{type_display}'\
-            file.type_filter_content = '{type_filter_content}'\
+            file.description = '{description}',\
+            file.type_display = '{type_display}',\
+            file.type_filter_content = '{type_filter_content}',\
             file.show_resource_description = '{show_resource_description}'\
                  return file"
 
