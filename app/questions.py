@@ -54,6 +54,136 @@ def questions_get(db: Graph):
     print(questions, file=sys.stderr)
     return jsonify(questions)
 
+class URLResource(Resource):
+    
+    def __init__(self, database):
+        # database is a dependency
+        self.db = database
+
+    @jwt_required
+    def get(self):
+        uuid = request.args.get("uuid")
+        network_id = request.args.get("network_id")
+        current_user = get_jwt_identity()
+        url = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_RESOURCE]-(url:URL{uuid:'%s'}) return url" % (current_user, network_id, uuid)).data()
+        return jsonify(url)
+
+    @jwt_required
+    def post(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+        uuid = generateUUID()
+
+        url = URL()
+        url.uuid = uuid
+        url.name = dataDict["name"]
+        url.description = dataDict["description"]
+        url.external_url = dataDict["external_url"]
+
+        self.db.push(url)
+
+        Network.addURL(self.db, current_user, dataDict["network_id"], uuid)
+        return jsonify({"sucess": True})
+
+    @jwt_required
+    def put(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+        network_id = dataDict["network_id"]
+        uuid = dataDict["uuid"]
+
+        name = dataDict["name"]
+        description = dataDict["description"]
+        external_url = dataDict["external_url"]
+
+        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_RESOURCE]-(url:URL{{uuid:'{uuid}'}}) \
+            SET url.name = '{name}',\
+            url.description = '{description}'\
+            url.external_url = '{external_url}'\
+                 return url"
+
+        self.db.run(query).data()
+
+        return jsonify({"updated": True})
+
+    @jwt_required
+    def delete(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+
+        network_id = dataDict["network_id"]
+        uuid = dataDict["uuid"]
+
+        query = f"Match (p:User{{email:'{current_user}'}})-[r1]-(activity:Network{{id:'{network_id}'}})-[r:HAS_RESOURCE]-(url:URL{{uuid:'{uuid}'}}) DETACH DELETE url "
+        self.db.run(query)
+
+        return jsonify({"Deleted": True})
+
+class PageResource(Resource):
+    
+    def __init__(self, database):
+        # database is a dependency
+        self.db = database
+
+    @jwt_required
+    def get(self):
+        uuid = request.args.get("uuid")
+        network_id = request.args.get("network_id")
+        current_user = get_jwt_identity()
+        page = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_RESOURCE]-(page:Page{uuid:'%s'}) return page" % (current_user, network_id, uuid)).data()
+        return jsonify(page)
+
+    @jwt_required
+    def post(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+        uuid = generateUUID()
+
+        page = Page()
+        page.uuid = uuid
+        page.name = dataDict["name"]
+        page.description = dataDict["description"]
+        page.content = dataDict["content"]
+
+        self.db.push(page)
+
+        Network.addPage(self.db, current_user, dataDict["network_id"], uuid)
+        return jsonify({"sucess": True})
+
+    @jwt_required
+    def put(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+        network_id = dataDict["network_id"]
+        uuid = dataDict["uuid"]
+
+        name = dataDict["name"]
+        description = dataDict["description"]
+        content = dataDict["content"]
+
+        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_RESOURCE]-(page:Page{{uuid:'{uuid}'}}) \
+            SET file.name = '{name}',\
+            file.description = '{description}'\
+            file.content = '{content}'\
+                 return file"
+
+        self.db.run(query).data()
+
+        return jsonify({"updated": True})
+
+    @jwt_required
+    def delete(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+
+        network_id = dataDict["network_id"]
+        uuid = dataDict["uuid"]
+
+        query = f"Match (p:User{{email:'{current_user}'}})-[r1]-(activity:Network{{id:'{network_id}'}})-[r:HAS_RESOURCE]-(page:Page{{uuid:'{uuid}'}}) DETACH DELETE page "
+        self.db.run(query)
+
+        return jsonify({"Deleted": True})
+
 class FileResource(Resource):
 
     def __init__(self, database):
@@ -132,7 +262,6 @@ class FileResource(Resource):
         self.db.run(query)
 
         return jsonify({"Deleted": True})
-
 
 class ConditionResource(Resource):
     

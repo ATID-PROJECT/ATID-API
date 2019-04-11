@@ -224,6 +224,12 @@ class Network(BaseModel):
     def addFile(graph, user, id, file_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (file:File{uuid: '%s'}) CREATE (a)-[:HAS_RESOURCE]->(file)" % (user ,id, file_id))
 
+    def addPage(graph, user, id, page_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (page:Page{uuid: '%s'}) CREATE (a)-[:HAS_RESOURCE]->(page)" % (user, id, page_id))
+
+    def addURL(graph, user, id, url_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (url:URL{uuid: '%s'}) CREATE (a)-[:HAS_RESOURCE]->(url)" % (user, id, url_id))
+
     def addChoice(graph, user, id, choice_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (choice:Choice{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(choice)" % (user ,id, choice_id))
 
