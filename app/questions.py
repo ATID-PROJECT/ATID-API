@@ -54,6 +54,380 @@ def questions_get(db: Graph):
     print(questions, file=sys.stderr)
     return jsonify(questions)
 
+@start_controller.route('/resources/get', methods=['GET'])
+@jwt_required
+def resources_get(db: Graph):
+    current_user = get_jwt_identity()
+    uuid = request.args.get("uuid")
+    network_id = request.args.get("network_id")
+    questions = db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_RESOURCE]-(resource{uuid: '%s'}) return resource" % (current_user, network_id, uuid)).data()
+    return jsonify(questions)
+
+class Forumesource(Resource):
+    
+    def __init__(self, database):
+        # database is a dependency
+        self.db = database
+
+    @jwt_required
+    def get(self):
+        uuid = request.args.get("uuid")
+        network_id = request.args.get("network_id")
+        current_user = get_jwt_identity()
+        forum = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(forum:Forum{uuid:'%s'}) return forum" % (current_user, network_id, uuid)).data()
+        return jsonify(forum)
+
+    @jwt_required
+    def post(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+        uuid = generateUUID()
+
+        forum = Forum()
+        forum.uuid = uuid
+        forum.name = dataDict["name"]
+        forum.description = dataDict["description"]
+        forum.type = dataDict["type"]
+        forum.max_size_upload = dataDict["max_size_upload"]
+        forum.max_files = dataDict["max_files"]
+        forum.show_word_count = dataDict["show_word_count"]
+        forum.signature_mode = dataDict["signature_mode"]
+        forum.read_monitor = dataDict["read_monitor"]
+        forum.block_inactivity = dataDict["block_inactivity"]
+        forum.block_duration = dataDict["block_duration"]
+        forum.block_limit_messages = dataDict["block_limit_messages"]
+        forum.block_limit_warning = dataDict["block_limit_warning"]
+        forum.conclusion_type = dataDict["conclusion_type"]
+        forum.view_required = dataDict["view_required"]
+        forum.note_required = dataDict["note_required"]
+        forum.messages_required = dataDict["messages_required"]
+        forum.num_messages = dataDict["num_messages"]
+        forum.discussion_required = dataDict["discussion_required"]
+        forum.num_discussions = dataDict["num_discussions"]
+        forum.replicas_required = dataDict["replicas_required"]
+        forum.num_replicas = dataDict["num_replicas"]
+        forum.allow_conclusion_date = dataDict["allow_conclusion_date"]
+        forum.conclusion_date = dataDict["conclusion_date"]
+
+        self.db.push(forum)
+
+        Network.addForum(self.db, current_user, dataDict["network_id"], uuid)
+        return jsonify({"sucess": True})
+
+    @jwt_required
+    def put(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+        network_id = dataDict["network_id"]
+        uuid = dataDict["uuid"]
+
+        name = dataDict["name"]
+        description = dataDict["description"]
+        type = dataDict["type"]
+        max_size_upload = dataDict["max_size_upload"]
+        max_files = dataDict["max_files"]
+        show_word_count = dataDict["show_word_count"]
+        signature_mode = dataDict["signature_mode"]
+        read_monitor = dataDict["read_monitor"]
+        block_inactivity = dataDict["block_inactivity"]
+        block_duration = dataDict["block_duration"]
+        block_limit_messages = dataDict["block_limit_messages"]
+        block_limit_warning = dataDict["block_limit_warning"]
+        conclusion_type = dataDict["conclusion_type"]
+        view_required = dataDict["view_required"]
+        note_required = dataDict["note_required"]
+        messages_required = dataDict["messages_required"]
+        num_messages = dataDict["num_messages"]
+        discussion_required = dataDict["discussion_required"]
+        num_discussions = dataDict["num_discussions"]
+        replicas_required = dataDict["replicas_required"]
+        num_replicas = dataDict["num_replicas"]
+        allow_conclusion_date = dataDict["allow_conclusion_date"]
+        conclusion_date = dataDict["conclusion_date"]
+
+        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(forum:Forum{{uuid:'{uuid}'}}) \
+            SET forum.name = '{name}',\
+            forum.description = '{description}',\
+            forum.type = '{type}',\
+            forum.max_size_upload = '{max_size_upload}',\
+            forum.max_files = '{max_files}',\
+            forum.show_word_count = '{show_word_count}',\
+            forum.signature_mode = '{signature_mode}',\
+            forum.read_monitor = '{read_monitor}',\
+            forum.block_inactivity = '{block_inactivity}',\
+            forum.block_duration = '{block_duration}',\
+            forum.block_limit_messages = '{block_limit_messages}',\
+            forum.block_limit_warning = '{block_limit_warning}',\
+            forum.conclusion_type = '{conclusion_type}',\
+            forum.view_required = '{view_required}',\
+            forum.note_required = '{note_required}',\
+            forum.messages_required = '{messages_required}',\
+            forum.num_messages = '{num_messages}',\
+            forum.discussion_required = '{discussion_required}',\
+            forum.num_discussions = '{num_discussions}',\
+            forum.replicas_required = '{replicas_required}',\
+            forum.num_replicas = '{num_replicas}',\
+            forum.allow_conclusion_date = '{allow_conclusion_date}',\
+            forum.conclusion_date = '{conclusion_date}'\
+                 return forum"
+
+        self.db.run(query).data()
+
+        return jsonify({"updated": True})
+
+    @jwt_required
+    def delete(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+
+        network_id = dataDict["network_id"]
+        uuid = dataDict["uuid"]
+
+        query = f"Match (p:User{{email:'{current_user}'}})-[r1]-(activity:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(forum:Forum{{uuid:'{uuid}'}}) DETACH DELETE forum "
+        self.db.run(query)
+
+        return jsonify({"Deleted": True})
+
+class GlossarioResource(Resource):
+    
+    def __init__(self, database):
+        # database is a dependency
+        self.db = database
+
+    @jwt_required
+    def get(self):
+        uuid = request.args.get("uuid")
+        network_id = request.args.get("network_id")
+        current_user = get_jwt_identity()
+        glossario = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(glossario:Glossario{uuid:'%s'}) return glossario" % (current_user, network_id, uuid)).data()
+        return jsonify(glossario)
+
+    @jwt_required
+    def post(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+        uuid = generateUUID()
+
+        glossario = Glossario()
+        glossario.uuid = uuid
+        glossario.name = dataDict["name"]
+        glossario.description = dataDict["description"]
+        glossario.type_glossario = dataDict["type_glossario"]
+        glossario.allow_new_item = dataDict["allow_new_item"]
+        glossario.allow_edit = dataDict["allow_edit"]
+        glossario.allow_repeat_item = dataDict["allow_repeat_item"]
+        glossario.allow_comments = dataDict["allow_comments"]
+        glossario.allow_automatic_links = dataDict["allow_automatic_links"]
+        glossario.type_view = dataDict["type_view"]
+        glossario.type_view_approved = dataDict["type_view_approved"]
+        glossario.num_items_by_page = dataDict["num_items_by_page"]
+        glossario.show_alphabet = dataDict["show_alphabet"]
+        glossario.show_todos = dataDict["show_todos"]
+        glossario.show_special = dataDict["show_special"]
+        glossario.allow_print = dataDict["allow_print"]
+        glossario.conclusion_type = dataDict["conclusion_type"]
+        glossario.view_required = dataDict["view_required"]
+        glossario.note_required = dataDict["note_required"]
+        glossario.input_required = dataDict["input_required"]
+        glossario.num_input = dataDict["num_input"]
+        glossario.allow_conclusion_date = dataDict["allow_conclusion_date"]
+        glossario.conclusion_date = dataDict["conclusion_date"]
+
+        self.db.push(glossario)
+
+        Network.addGlossario(self.db, current_user, dataDict["network_id"], uuid)
+        return jsonify({"sucess": True})
+
+    @jwt_required
+    def put(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+        network_id = dataDict["network_id"]
+        uuid = dataDict["uuid"]
+
+        name = dataDict["name"]
+        description = dataDict["description"]
+        type_glossario = dataDict["type_glossario"]
+        allow_new_item = dataDict["allow_new_item"]
+        allow_edit = dataDict["allow_edit"]
+        allow_repeat_item = dataDict["allow_repeat_item"]
+        allow_comments = dataDict["allow_comments"]
+        allow_automatic_links = dataDict["allow_automatic_links"]
+        type_view = dataDict["type_view"]
+        type_view_approved = dataDict["type_view_approved"]
+        num_items_by_page = dataDict["num_items_by_page"]
+        show_alphabet = dataDict["show_alphabet"]
+        show_todos = dataDict["show_todos"]
+        show_special = dataDict["show_special"]
+        allow_print = dataDict["allow_print"]
+        conclusion_type = dataDict["conclusion_type"]
+        view_required = dataDict["view_required"]
+        note_required = dataDict["note_required"]
+        input_required = dataDict["input_required"]
+        num_input = dataDict["num_input"]
+        allow_conclusion_date = dataDict["allow_conclusion_date"]
+        conclusion_date = dataDict["conclusion_date"]
+
+        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(glossario:Glossario{{uuid:'{uuid}'}}) \
+            SET glossario.name = '{name}',\
+            glossario.description = '{description}',\
+            glossario.type_glossario = '{type_glossario}',\
+            glossario.allow_new_item = '{allow_new_item}',\
+            glossario.allow_edit = '{allow_edit}',\
+            glossario.allow_repeat_item = '{allow_repeat_item}',\
+            glossario.allow_comments = '{allow_comments}',\
+            glossario.allow_automatic_links = '{allow_automatic_links}',\
+            glossario.type_view = '{type_view}',\
+            glossario.type_view_approved = '{type_view_approved}',\
+            glossario.num_items_by_page = '{num_items_by_page}',\
+            glossario.show_alphabet = '{show_alphabet}',\
+            glossario.show_todos = '{show_todos}',\
+            glossario.show_special = '{show_special}',\
+            glossario.allow_print = '{allow_print}',\
+            glossario.conclusion_type = '{conclusion_type}',\
+            glossario.view_required = '{view_required}',\
+            glossario.input_required = '{input_required}',\
+            glossario.num_input = '{num_input}',\
+            glossario.allow_conclusion_date = '{allow_conclusion_date}',\
+            glossario.conclusion_date = '{conclusion_date}',\
+            glossario.note_required = '{note_required}'\
+                 return glossario"
+
+        self.db.run(query).data()
+
+        return jsonify({"updated": True})
+
+    @jwt_required
+    def delete(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+
+        network_id = dataDict["network_id"]
+        uuid = dataDict["uuid"]
+
+        query = f"Match (p:User{{email:'{current_user}'}})-[r1]-(activity:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(glossario:Glossario{{uuid:'{uuid}'}}) DETACH DELETE glossario "
+        self.db.run(query)
+
+        return jsonify({"Deleted": True})
+
+class SearchResource(Resource):
+    
+    def __init__(self, database):
+        # database is a dependency
+        self.db = database
+
+    @jwt_required
+    def get(self):
+        uuid = request.args.get("uuid")
+        network_id = request.args.get("network_id")
+        current_user = get_jwt_identity()
+        search = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(search:Search{uuid:'%s'}) return search" % (current_user, network_id, uuid)).data()
+        return jsonify(search)
+
+    @jwt_required
+    def post(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+        uuid = generateUUID()
+
+        search = Search()
+        search.uuid = uuid
+        search.name = dataDict["name"]
+        search.description = dataDict["description"]
+        search.allow_responses_from = dataDict["allow_responses_from"]
+        search.responses_from = dataDict["responses_from"]
+
+        search.allow_responses_to = dataDict["allow_responses_to"]
+        search.responses_to = dataDict["responses_to"]
+
+        search.type_username_recorded = dataDict["type_username_recorded"]
+        search.allow_mult_send = dataDict["allow_mult_send"]
+        search.allow_notice_send = dataDict["allow_notice_send"]
+        search.allow_automatic_numbering = dataDict["allow_automatic_numbering"]
+
+        search.show_analyze = dataDict["show_analyze"]
+        search.conclusion_message = dataDict["conclusion_message"]
+        search.next_link = dataDict["next_link"]
+
+        search.conclusion_type = dataDict["conclusion_type"]
+        search.view_required = dataDict["view_required"]
+        search.finished_sent = dataDict["finished_sent"]
+        search.allow_conclusion_date = dataDict["allow_conclusion_date"]
+        search.conclusion_date = dataDict["conclusion_date"]
+
+        self.db.push(search)
+
+        Network.addSearch(self.db, current_user, dataDict["network_id"], uuid)
+        return jsonify({"sucess": True})
+
+    @jwt_required
+    def put(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+        network_id = dataDict["network_id"]
+        uuid = dataDict["uuid"]
+
+        name = dataDict["name"]
+        description = dataDict["description"]
+        search.allow_responses_from = dataDict["allow_responses_from"]
+        search.responses_from = dataDict["responses_from"]
+
+        search.allow_responses_to = dataDict["allow_responses_to"]
+        search.responses_to = dataDict["responses_to"]
+
+        search.type_username_recorded = dataDict["type_username_recorded"]
+        search.allow_mult_send = dataDict["allow_mult_send"]
+        search.allow_notice_send = dataDict["allow_notice_send"]
+        search.allow_automatic_numbering = dataDict["allow_automatic_numbering"]
+
+        search.show_analyze = dataDict["show_analyze"]
+        search.conclusion_message = dataDict["conclusion_message"]
+        search.next_link = dataDict["next_link"]
+
+        search.conclusion_type = dataDict["conclusion_type"]
+        search.view_required = dataDict["view_required"]
+        search.finished_sent = dataDict["finished_sent"]
+        search.allow_conclusion_date = dataDict["allow_conclusion_date"]
+        search.conclusion_date = dataDict["conclusion_date"]
+
+        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(search:Search{{uuid:'{uuid}'}}) \
+            SET search.name = '{name}',\
+            search.description = '{description}',\
+            search.allow_responses_from = '{allow_responses_from}',\
+            search.responses_from = '{responses_from}',\
+            search.allow_responses_to = '{allow_responses_to}',\
+            search.responses_to = '{responses_to}',\
+            search.type_username_recorded = '{type_username_recorded}',\
+            search.allow_mult_send = '{allow_mult_send}',\
+            search.allow_notice_send = '{allow_notice_send}',\
+            search.allow_automatic_numbering = '{allow_automatic_numbering}',\
+            search.show_analyze = '{show_analyze}',\
+            search.conclusion_message = '{conclusion_message}',\
+            search.next_link = '{next_link}',\
+            search.conclusion_type = '{conclusion_type}',\
+            search.view_required = '{view_required}',\
+            search.finished_sent = '{finished_sent}',\
+            search.allow_conclusion_date = '{allow_conclusion_date}',\
+            search.conclusion_date = '{conclusion_date}'\
+                 return search"
+
+        self.db.run(query).data()
+
+        return jsonify({"updated": True})
+
+    @jwt_required
+    def delete(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+
+        network_id = dataDict["network_id"]
+        uuid = dataDict["uuid"]
+
+        query = f"Match (p:User{{email:'{current_user}'}})-[r1]-(activity:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(search:Search{{uuid:'{uuid}'}}) DETACH DELETE search "
+        self.db.run(query)
+
+        return jsonify({"Deleted": True})
+
 class URLResource(Resource):
     
     def __init__(self, database):
@@ -98,8 +472,8 @@ class URLResource(Resource):
 
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_RESOURCE]-(url:URL{{uuid:'{uuid}'}}) \
             SET url.name = '{name}',\
-            url.description = '{description}'\
-            url.external_url = '{external_url}'\
+            url.description = '{description}',\
+            url.external_url = '{external_url}',\
                  return url"
 
         self.db.run(query).data()
@@ -162,9 +536,9 @@ class PageResource(Resource):
         content = dataDict["content"]
 
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_RESOURCE]-(page:Page{{uuid:'{uuid}'}}) \
-            SET file.name = '{name}',\
-            file.description = '{description}'\
-            file.content = '{content}'\
+            SET page.name = '{name}',\
+            page.description = '{description}',\
+            page.content = '{content}'\
                  return file"
 
         self.db.run(query).data()

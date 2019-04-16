@@ -108,6 +108,107 @@ class File(BaseModel):
     show_description = Property()
     show_resource_description = Property()
 
+class Forum(BaseModel):
+    
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    name = Property()
+    description = Property()
+    type = Property()
+
+    max_size_upload = Property()
+    max_files = Property()
+    show_word_count = Property()
+
+    signature_mode = Property()
+    read_monitor  = Property()
+
+    block_inactivity = Property()
+    block_duration = Property()
+    block_limit_messages = Property()
+    block_limit_warning = Property()
+
+    conclusion_type = Property()
+    view_required = Property()
+    note_required = Property()
+    messages_required = Property()
+    num_messages = Property()
+
+    discussion_required = Property()
+    num_discussions = Property()
+
+    replicas_required = Property()
+    num_replicas = Property()
+
+    allow_conclusion_date = Property()
+    conclusion_date = Property()
+
+class Glossario(BaseModel):
+    
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    name = Property()
+    description = Property()
+    type_glossario = Property()
+
+    allow_new_item = Property()
+    allow_edit = Property()
+    allow_repeat_item = Property()
+    allow_comments = Property()
+    allow_automatic_links = Property()
+
+    type_view = Property()
+    type_view_approved = Property()
+    num_items_by_page = Property()
+    show_alphabet = Property()
+    show_todos = Property()
+    show_special = Property()
+    allow_print = Property()
+
+    conclusion_type = Property()
+    view_required = Property()
+    note_required = Property()
+    
+    input_required = Property()
+    num_input = Property()
+
+    allow_conclusion_date = Property()
+    conclusion_date = Property()
+
+class Search(BaseModel):
+    
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    name = Property()
+    description = Property()
+
+    allow_responses_from = Property()
+    responses_from = Property()
+
+    allow_responses_to = Property()
+    responses_to = Property()
+
+    type_username_recorded = Property()
+    allow_mult_send = Property()
+    allow_notice_send = Property()
+    allow_automatic_numbering = Property()
+
+    show_analyze = Property()
+    conclusion_message = Property()
+    next_link = Property()
+
+    conclusion_type = Property()
+    view_required = Property()
+    finished_sent = Property()
+    allow_conclusion_date = Property()
+    conclusion_date = Property()
+
 class URL(BaseModel):
 
     __primarykey__ = 'uuid'
