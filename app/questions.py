@@ -539,7 +539,7 @@ class PageResource(Resource):
             SET page.name = '{name}',\
             page.description = '{description}',\
             page.content = '{content}'\
-                 return file"
+                 return page"
 
         self.db.run(query).data()
 
@@ -614,9 +614,9 @@ class FileResource(Resource):
 
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_RESOURCE]-(file:File{{uuid:'{uuid}'}}) \
             SET file.name = '{name}',\
-            file.description = '{description}'\
-            file.type_display = '{type_display}'\
-            file.type_filter_content = '{type_filter_content}'\
+            file.description = '{description}',\
+            file.type_display = '{type_display}',\
+            file.type_filter_content = '{type_filter_content}',\
             file.show_resource_description = '{show_resource_description}'\
                  return file"
 
