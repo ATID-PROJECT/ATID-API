@@ -63,7 +63,7 @@ def resources_get(db: Graph):
     questions = db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_RESOURCE]-(resource{uuid: '%s'}) return resource" % (current_user, network_id, uuid)).data()
     return jsonify(questions)
 
-class Forumesource(Resource):
+class ForumResource(Resource):
     
     def __init__(self, database):
         # database is a dependency
@@ -87,7 +87,7 @@ class Forumesource(Resource):
         forum.uuid = uuid
         forum.name = dataDict["name"]
         forum.description = dataDict["description"]
-        forum.type = dataDict["type"]
+        forum.type_forum = dataDict["type"]
         forum.max_size_upload = dataDict["max_size_upload"]
         forum.max_files = dataDict["max_files"]
         forum.show_word_count = dataDict["show_word_count"]
@@ -148,7 +148,7 @@ class Forumesource(Resource):
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(forum:Forum{{uuid:'{uuid}'}}) \
             SET forum.name = '{name}',\
             forum.description = '{description}',\
-            forum.type = '{type}',\
+            forum.type_forum = '{type}',\
             forum.max_size_upload = '{max_size_upload}',\
             forum.max_files = '{max_files}',\
             forum.show_word_count = '{show_word_count}',\
@@ -183,7 +183,7 @@ class Forumesource(Resource):
         network_id = dataDict["network_id"]
         uuid = dataDict["uuid"]
 
-        query = f"Match (p:User{{email:'{current_user}'}})-[r1]-(activity:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(forum:Forum{{uuid:'{uuid}'}}) DETACH DELETE forum "
+        query = f"Match (p:User{{email:'{current_user}'}})-[r1]-(forum:Forum{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(forum:Forum{{uuid:'{uuid}'}}) DETACH DELETE forum "
         self.db.run(query)
 
         return jsonify({"Deleted": True})
@@ -228,8 +228,8 @@ class GlossarioResource(Resource):
         glossario.conclusion_type = dataDict["conclusion_type"]
         glossario.view_required = dataDict["view_required"]
         glossario.note_required = dataDict["note_required"]
-        glossario.input_required = dataDict["input_required"]
-        glossario.num_input = dataDict["num_input"]
+        glossario.entry_required = dataDict["entry_required"]
+        glossario.entry_value = dataDict["entry_value"]
         glossario.allow_conclusion_date = dataDict["allow_conclusion_date"]
         glossario.conclusion_date = dataDict["conclusion_date"]
 
@@ -263,8 +263,8 @@ class GlossarioResource(Resource):
         conclusion_type = dataDict["conclusion_type"]
         view_required = dataDict["view_required"]
         note_required = dataDict["note_required"]
-        input_required = dataDict["input_required"]
-        num_input = dataDict["num_input"]
+        entry_required = dataDict["entry_required"]
+        entry_value = dataDict["entry_value"]
         allow_conclusion_date = dataDict["allow_conclusion_date"]
         conclusion_date = dataDict["conclusion_date"]
 
@@ -286,8 +286,9 @@ class GlossarioResource(Resource):
             glossario.allow_print = '{allow_print}',\
             glossario.conclusion_type = '{conclusion_type}',\
             glossario.view_required = '{view_required}',\
-            glossario.input_required = '{input_required}',\
-            glossario.num_input = '{num_input}',\
+            glossario.note_required = '{note_required}',\
+            glossario.entry_required = '{entry_required}',\
+            glossario.entry_value = '{entry_value}',\
             glossario.allow_conclusion_date = '{allow_conclusion_date}',\
             glossario.conclusion_date = '{conclusion_date}',\
             glossario.note_required = '{note_required}'\

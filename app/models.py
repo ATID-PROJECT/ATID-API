@@ -116,7 +116,7 @@ class Forum(BaseModel):
 
     name = Property()
     description = Property()
-    type = Property()
+    type_forum = Property()
 
     max_size_upload = Property()
     max_files = Property()
@@ -124,11 +124,6 @@ class Forum(BaseModel):
 
     signature_mode = Property()
     read_monitor  = Property()
-
-    block_inactivity = Property()
-    block_duration = Property()
-    block_limit_messages = Property()
-    block_limit_warning = Property()
 
     conclusion_type = Property()
     view_required = Property()
@@ -168,15 +163,12 @@ class Glossario(BaseModel):
     show_todos = Property()
     show_special = Property()
     allow_print = Property()
-
+    
     conclusion_type = Property()
     view_required = Property()
     note_required = Property()
-    
-    input_required = Property()
-    num_input = Property()
-
-    allow_conclusion_date = Property()
+    entry_required = Property()
+    entry_value = Property()
     conclusion_date = Property()
 
 class Search(BaseModel):
@@ -313,8 +305,17 @@ class Network(BaseModel):
     def getQuantity(graph, user):
         return graph.evaluate("Match (p:User{email:'%s'})-[r]-(activity:Network) return COUNT(*)" % user)
 
+    def addSearch(graph, user, id, search_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (search:Search{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(search)" % (user ,id, search_id))
+        
+    def addGlossario(graph, user, id, glossario_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (glossario:Glossario{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(glossario)" % (user ,id, glossario_id))
+        
     def addQuiz(graph, user, id, quiz_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (quiz:Quiz{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(quiz)" % (user ,id, quiz_id))
+
+    def addForum(graph, user, id, forum_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (forum:Forum{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(forum)" % (user ,id, forum_id))
 
     def addCondition(graph, user, id, condition_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (condition:Condition{id_activity: '%s'}) CREATE (a)-[:HAS_CONDITION]->(condition)" % (user ,id, condition_id))
