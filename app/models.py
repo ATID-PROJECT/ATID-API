@@ -221,6 +221,32 @@ class Page(BaseModel):
     description = Property()
     content = Property() 
 
+class ExternTool(BaseModel):
+    
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    name = Property()
+    description = Property()
+    description = Property()
+    show_description_course = Property()
+    show_activity = Property()
+    show_description_activity = Property()
+
+    pre_config_url = Property()
+    url_tool = Property()
+    url_tool_ssl = Property()
+
+    pre_config = Property()
+    key_consumer = Property()
+    key_secret = Property()
+    custom_params = Property()
+
+    share_name = Property()
+    share_email = Property()
+    accept_notes = Property()
+
 class Lesson(BaseModel):
 
     __primarykey__ = 'uuid'
@@ -307,6 +333,9 @@ class Network(BaseModel):
 
     def addSearch(graph, user, id, search_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (search:Search{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(search)" % (user ,id, search_id))
+     
+    def addExternTool(graph, user, id, externtool_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (externtool:ExternTool{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(externtool)" % (user ,id, externtool_id))
         
     def addGlossario(graph, user, id, glossario_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (glossario:Glossario{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(glossario)" % (user ,id, glossario_id))

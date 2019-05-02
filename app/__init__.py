@@ -29,7 +29,7 @@ from injector import Module, singleton
 from flask_restful import Api
 from py2neo import Graph
 
-from .questions import GlossarioResource, ForumResource, PageResource, URLResource, FileResource, ConditionResource, QuizResource, ChatResource, LessonResource, DatabaseResource, ChoiceResource
+from .questions import ExternToolResource, GlossarioResource, ForumResource, PageResource, URLResource, FileResource, ConditionResource, QuizResource, ChatResource, LessonResource, DatabaseResource, ChoiceResource
 
 class AppModule(Module):
     def __init__(self, app):
@@ -69,6 +69,12 @@ def create_app():
 
     module_app = AppModule(app)
     FlaskInjector(app=app, modules=[module_app])
+
+    api.add_resource(ForumResource, '/questions/forum/',
+        resource_class_kwargs={ 'database': module_app.db })
+
+    api.add_resource(ExternToolResource, '/questions/externtool/',
+        resource_class_kwargs={ 'database': module_app.db })
 
     api.add_resource(FileResource, '/resources/file/',
         resource_class_kwargs={ 'database': module_app.db })
