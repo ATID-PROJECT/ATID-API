@@ -27,7 +27,23 @@ url_moodle = "webservice/rest/server.php?wstoken={0}&wsfunction={1}&moodlewsrest
 
 def getCurrentDate():
     return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    
+
+@account_controller.route('/moodle/test', methods=['GET'])
+@jwt_required
+def moodleTest():
+    function = "core_webservice_get_site_info"
+    url = request.args.get("url")
+    #change default token to owener token
+    token = request.args.get("token")
+    with urllib.request.urlopen(str( url + "/" +(url_moodle.format(token, function)))) as url:
+        data = json.loads(url.read().decode())
+        if 'exception' in data:
+            return jsonify({"message": "`url` e `token` inválidos.", "status": 400}), 400
+
+        return jsonify({"message": "`url` e `token` são obrigatórios.", "status": 200}), 200
+
+    return jsonify({"message": "`url` e `token` são obrigatórios.", "status": 400}), 400
+
 @account_controller.route('/moodle/get', methods=['GET'])
 @jwt_required
 def getFunctionMoodle():
