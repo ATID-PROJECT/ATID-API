@@ -79,8 +79,6 @@ def makeCourse(db: Graph):
 
     createCourse(network['url'], network['token'], fullname, shortname, db, network_id, current_user)
 
-    
-
     return jsonify({"message": "curso criado com sucesso", "status": 200}), 200
     
 
