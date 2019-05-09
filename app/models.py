@@ -1,4 +1,3 @@
-import maya
 
 from py2neo.ogm import GraphObject, Property, RelatedTo
 
@@ -39,6 +38,14 @@ class User(BaseModel):
     def fetch_by_email_and_password(graph, email, password):
         condicao = "_.email = '{0}' AND _.passwod = '{1}'".format(email, password)
         return User.match(graph, email).where( condicao ).first()
+
+class Course(BaseModel):
+    
+    __primarykey__ = 'id'
+
+    id = Property()
+    fullname = Property()
+    shortname = Property()
 
 class SubNetwork(BaseModel):
 
@@ -330,9 +337,13 @@ class Network(BaseModel):
 
     def getQuantity(graph, user):
         return graph.evaluate("Match (p:User{email:'%s'})-[r]-(activity:Network) return COUNT(*)" % user)
-
+    
     def addSearch(graph, user, id, search_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (search:Search{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(search)" % (user ,id, search_id))
+     
+
+    def addCourse(graph, user, id, course_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (course:Course{id: %s}) CREATE (a)-[:HAS_COURSE]->(course)" % (user ,id, course_id))
      
     def addExternTool(graph, user, id, externtool_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (externtool:ExternTool{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(externtool)" % (user ,id, externtool_id))

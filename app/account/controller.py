@@ -20,14 +20,92 @@ from py2neo import Relationship, Node
 from app.JWTManager import jwt
 import uuid 
 
+
 import urllib.request, json 
+import requests
 
 source_moodle = "https://good-firefox-42.localtunnel.me"
 url_moodle = "webservice/rest/server.php?wstoken={0}&wsfunction={1}&moodlewsrestformat=json"
 
 def getCurrentDate():
     return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+def saveConnection( db, network_id, current_user, url, token ):
+    query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(net:Network{{id:'{network_id}'}}) \
+            SET net.url = '{url}',\
+                net.token = '{token}'\
+                return net"
+    print( query, file=sys.stderr)
+    db.run(query)
+
+def registerCourse( db, current_id, network_id, current_user, fullname, shortname):
     
+    course = Course()
+    course.id = current_id
+    course.fullname = fullname
+    course.shortname = shortname
+    
+    db.push(course)
+
+    Network.addCourse(db, current_user, network_id, current_id)
+
+
+def createCourse(url_base, token, fullname, shortname, db, network_id, current_user):
+    function = "core_course_create_courses"
+    
+    params = f"&courses[0][fullname]={fullname}\
+        &courses[0][shortname]={shortname}\
+            &courses[0][categoryid]=1"
+    final_url = str( url_base + "/" +(url_moodle.format(token, function+params)))
+    print(final_url, file=sys.stderr)
+    r = requests.post( final_url, data={})
+    result = json.loads( r.text )
+
+    registerCourse(db, result[0]['id'], network_id, current_user, fullname, shortname)
+
+    return result
+
+@account_controller.route('/moodle/new_course', methods=['POST'])
+@jwt_required
+def makeCourse(db: Graph):
+    current_user = get_jwt_identity()
+    dataDict = request.get_json(force=True)
+
+    network_id = dataDict["network_id"]
+    fullname = dataDict["fullname"]
+    shortname = dataDict["shortname"]
+    
+    network = db.run("MATCH (p:User{email:'%s'})-[r1]-(net:Network{id:'%s'}) return net" % (current_user, network_id)).data()[0]['net']
+
+    createCourse(network['url'], network['token'], fullname, shortname, db, network_id, current_user)
+
+    
+
+    return jsonify({"message": "curso criado com sucesso", "status": 200}), 200
+    
+
+@account_controller.route('/moodle/test', methods=['GET'])
+@jwt_required
+def moodleTest(db: Graph):
+    function = "core_webservice_get_site_info"
+    current_user = get_jwt_identity()
+
+    url_base = request.args.get("url")
+    network_id = request.args.get("network_id")
+    token = request.args.get("token")
+
+    print(str( url_base + "/" +(url_moodle.format(token, function))), file=sys.stderr)
+    with urllib.request.urlopen(str( url_base + "/" +(url_moodle.format(token, function)))) as url:
+        data = json.loads(url.read().decode())
+        if 'exception' in data:
+            return jsonify({"message": "`url` e `token` inválidos.", "status": 400}), 400
+
+        saveConnection( db, network_id, current_user, url_base, token)
+        return jsonify({"message": "`url` e `token` são obrigatórios.", "status": 200}), 200
+
+    
+    return jsonify({"message": "`url` e `token` são obrigatórios.", "status": 400}), 400
+
 @account_controller.route('/moodle/get', methods=['GET'])
 @jwt_required
 def getFunctionMoodle():

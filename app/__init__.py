@@ -16,7 +16,7 @@ from flask.views import View
 from flask_injector import FlaskInjector
 from injector import inject
 
-from flask import request
+from flask import request, jsonify
 
 from .manage import default_config_app
 from .JWTManager import jwt
@@ -109,6 +109,10 @@ def create_app():
     @login_manager.user_loader
     def load_user(user_id):
         return Usuario.query.get(int(user_id))
+    
+    @app.errorhandler(Exception)
+    def all_exception_handler(error):
+        return jsonify({"message": "Ocorreu um problema.", "status": 500}), 500
 
     default_config_app(app)
     return app

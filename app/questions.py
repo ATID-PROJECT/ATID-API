@@ -63,6 +63,17 @@ def resources_get(db: Graph):
     questions = db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_RESOURCE]-(resource{uuid: '%s'}) return resource" % (current_user, network_id, uuid)).data()
     return jsonify(questions)
 
+@start_controller.route('/courses/getall', methods=['GET'])
+@jwt_required
+def courses_getall(db: Graph):
+    current_user = get_jwt_identity()
+    page = int(request.args.get("page"))-1
+    size = int(request.args.get("page_size"))
+    
+    courses = db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network)-[r:HAS_COURSE]-(course) set course.label = labels(course)[0] return course  SKIP %s LIMIT %s" % (current_user, page*size, size)).data()
+    return jsonify(courses)
+
+
 class ExternToolResource(Resource):
     
     def __init__(self, database):
