@@ -95,30 +95,39 @@ class ExternToolResource(Resource):
         current_user = get_jwt_identity()
         uuid = generateUUID()
 
-        externtool = externTool()
-        externtool.uuid = uuid
-        externtool.name = dataDict["name"]
-        externtool.description = dataDict["description"]
-        externtool.show_description_course = dataDict["show_description_course"]
-        externtool.show_activity = dataDict["show_activity"]
-        externtool.show_description_activity = dataDict["show_description_activity"]
 
-        externtool.pre_config_url = dataDict["pre_config_url"]
-        externtool.url_tool = dataDict["url_tool"]
-        externtool.url_tool_ssl = dataDict["url_tool_ssl"]
 
-        externtool.pre_config = dataDict["pre_config"]
-        externtool.key_consumer = dataDict["key_consumer"]
-        externtool.key_secret = dataDict["key_secret"]
-        externtool.custom_params = dataDict["custom_params"]
+        try:
+            externtool = ExternTool()
+            externtool.uuid = uuid
+            externtool.name = dataDict["name"]
 
-        externtool.share_name = dataDict["share_name"]
-        externtool.share_email = dataDict["share_email"]
-        externtool.accept_notes = dataDict["accept_notes"]
+            externtool.description = dataDict["description"]
+            externtool.show_description_course = dataDict["show_description_course"]
+            externtool.show_activity = dataDict["show_activity"]
+            externtool.show_description_activity = dataDict["show_description_activity"]
 
-        self.db.push(externtool)
 
-        Network.addExternTool(self.db, current_user, dataDict["network_id"], uuid)
+            externtool.pre_config_url = dataDict["pre_config_url"]
+            externtool.url_tool = dataDict["url_tool"]
+            externtool.url_tool_ssl = dataDict["url_tool_ssl"]
+
+
+            externtool.pre_config = dataDict["pre_config"]
+            externtool.key_consumer = dataDict["key_consumer"]
+            externtool.key_secret = dataDict["key_secret"]
+            externtool.custom_params = dataDict["custom_params"]
+
+            self.db.push(externtool)
+
+            Network.addExternTool(self.db, current_user, dataDict["network_id"], uuid)
+
+        except Exception as e:
+            print("ERRO:",file=sys.stderr)
+            print(str(e), file=sys.stderr)
+
+
+        
         return jsonify({"sucess": True})
 
     @jwt_required
@@ -143,10 +152,6 @@ class ExternToolResource(Resource):
         key_secret = dataDict["key_secret"]
         custom_params = dataDict["custom_params"]
 
-        share_name = dataDict["share_name"]
-        share_email = dataDict["share_email"]
-        accept_notes = dataDict["accept_notes"]
-
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(externtool:ExternTool{{uuid:'{uuid}'}}) \
             SET externtool.name = '{name}',\
             externtool.description = '{description}',\
@@ -160,9 +165,6 @@ class ExternToolResource(Resource):
             externtool.key_consumer = '{key_consumer}',\
             externtool.key_secret = '{key_secret}',\
             externtool.custom_params = '{custom_params}',\
-            externtool.share_name = '{share_name}',\
-            externtool.share_email = '{share_email}',\
-            externtool.accept_notes = '{accept_notes}',\
                  return externtool"
 
         self.db.run(query).data()
@@ -198,39 +200,29 @@ class ForumResource(Resource):
 
     @jwt_required
     def post(self):
-        dataDict = request.get_json(force=True)
-        current_user = get_jwt_identity()
-        uuid = generateUUID()
+        try:
+            dataDict = request.get_json(force=True)
+            current_user = get_jwt_identity()
+            uuid = generateUUID()
+        
+            forum = Forum()
+            forum.uuid = uuid
+            forum.name = dataDict["name"]
+            forum.description = dataDict["description"]
+            forum.type_forum = dataDict["type_forum"]
+            forum.maxbytes = dataDict["maxbytes"]
+            forum.maxattachments = dataDict["maxattachments"]
+            forum.displaywordcount = dataDict["displaywordcount"]
+            forum.forcesubscribe = dataDict["forcesubscribe"]
+            forum.trackingtype = dataDict["trackingtype"]
 
-        forum = Forum()
-        forum.uuid = uuid
-        forum.name = dataDict["name"]
-        forum.description = dataDict["description"]
-        forum.type_forum = dataDict["type"]
-        forum.max_size_upload = dataDict["max_size_upload"]
-        forum.max_files = dataDict["max_files"]
-        forum.show_word_count = dataDict["show_word_count"]
-        forum.signature_mode = dataDict["signature_mode"]
-        forum.read_monitor = dataDict["read_monitor"]
-        forum.block_inactivity = dataDict["block_inactivity"]
-        forum.block_duration = dataDict["block_duration"]
-        forum.block_limit_messages = dataDict["block_limit_messages"]
-        forum.block_limit_warning = dataDict["block_limit_warning"]
-        forum.conclusion_type = dataDict["conclusion_type"]
-        forum.view_required = dataDict["view_required"]
-        forum.note_required = dataDict["note_required"]
-        forum.messages_required = dataDict["messages_required"]
-        forum.num_messages = dataDict["num_messages"]
-        forum.discussion_required = dataDict["discussion_required"]
-        forum.num_discussions = dataDict["num_discussions"]
-        forum.replicas_required = dataDict["replicas_required"]
-        forum.num_replicas = dataDict["num_replicas"]
-        forum.allow_conclusion_date = dataDict["allow_conclusion_date"]
-        forum.conclusion_date = dataDict["conclusion_date"]
+        
+            self.db.push(forum)
 
-        self.db.push(forum)
-
-        Network.addForum(self.db, current_user, dataDict["network_id"], uuid)
+            Network.addForum(self.db, current_user, dataDict["network_id"], uuid)
+        except Exception as e:
+            print("ERRO:",file=sys.stderr)
+            print(str(e), file=sys.stderr)
         return jsonify({"sucess": True})
 
     @jwt_required
@@ -242,52 +234,22 @@ class ForumResource(Resource):
 
         name = dataDict["name"]
         description = dataDict["description"]
-        type = dataDict["type"]
-        max_size_upload = dataDict["max_size_upload"]
-        max_files = dataDict["max_files"]
-        show_word_count = dataDict["show_word_count"]
-        signature_mode = dataDict["signature_mode"]
-        read_monitor = dataDict["read_monitor"]
-        block_inactivity = dataDict["block_inactivity"]
-        block_duration = dataDict["block_duration"]
-        block_limit_messages = dataDict["block_limit_messages"]
-        block_limit_warning = dataDict["block_limit_warning"]
-        conclusion_type = dataDict["conclusion_type"]
-        view_required = dataDict["view_required"]
-        note_required = dataDict["note_required"]
-        messages_required = dataDict["messages_required"]
-        num_messages = dataDict["num_messages"]
-        discussion_required = dataDict["discussion_required"]
-        num_discussions = dataDict["num_discussions"]
-        replicas_required = dataDict["replicas_required"]
-        num_replicas = dataDict["num_replicas"]
-        allow_conclusion_date = dataDict["allow_conclusion_date"]
-        conclusion_date = dataDict["conclusion_date"]
+        type_forum = dataDict["type_forum"]
+        maxbytes = dataDict["maxbytes"]
+        maxattachments = dataDict["maxattachments"]
+        displaywordcount = dataDict["displaywordcount"]
+        forcesubscribe = dataDict["forcesubscribe"]
+        trackingtype = dataDict["trackingtype"]
 
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(forum:Forum{{uuid:'{uuid}'}}) \
             SET forum.name = '{name}',\
             forum.description = '{description}',\
-            forum.type_forum = '{type}',\
-            forum.max_size_upload = '{max_size_upload}',\
-            forum.max_files = '{max_files}',\
-            forum.show_word_count = '{show_word_count}',\
-            forum.signature_mode = '{signature_mode}',\
-            forum.read_monitor = '{read_monitor}',\
-            forum.block_inactivity = '{block_inactivity}',\
-            forum.block_duration = '{block_duration}',\
-            forum.block_limit_messages = '{block_limit_messages}',\
-            forum.block_limit_warning = '{block_limit_warning}',\
-            forum.conclusion_type = '{conclusion_type}',\
-            forum.view_required = '{view_required}',\
-            forum.note_required = '{note_required}',\
-            forum.messages_required = '{messages_required}',\
-            forum.num_messages = '{num_messages}',\
-            forum.discussion_required = '{discussion_required}',\
-            forum.num_discussions = '{num_discussions}',\
-            forum.replicas_required = '{replicas_required}',\
-            forum.num_replicas = '{num_replicas}',\
-            forum.allow_conclusion_date = '{allow_conclusion_date}',\
-            forum.conclusion_date = '{conclusion_date}'\
+            forum.type_forum = '{type_forum}',\
+            forum.maxbytes = '{maxbytes}',\
+            forum.maxattachments = '{maxattachments}',\
+            forum.displaywordcount = '{displaywordcount}',\
+            forum.forcesubscribe = '{forcesubscribe}',\
+            forum.trackingtype = '{trackingtype}'\
                  return forum"
 
         self.db.run(query).data()
@@ -344,13 +306,6 @@ class GlossarioResource(Resource):
         glossario.show_todos = dataDict["show_todos"]
         glossario.show_special = dataDict["show_special"]
         glossario.allow_print = dataDict["allow_print"]
-        glossario.conclusion_type = dataDict["conclusion_type"]
-        glossario.view_required = dataDict["view_required"]
-        glossario.note_required = dataDict["note_required"]
-        glossario.entry_required = dataDict["entry_required"]
-        glossario.entry_value = dataDict["entry_value"]
-        glossario.allow_conclusion_date = dataDict["allow_conclusion_date"]
-        glossario.conclusion_date = dataDict["conclusion_date"]
 
         self.db.push(glossario)
 
@@ -379,13 +334,6 @@ class GlossarioResource(Resource):
         show_todos = dataDict["show_todos"]
         show_special = dataDict["show_special"]
         allow_print = dataDict["allow_print"]
-        conclusion_type = dataDict["conclusion_type"]
-        view_required = dataDict["view_required"]
-        note_required = dataDict["note_required"]
-        entry_required = dataDict["entry_required"]
-        entry_value = dataDict["entry_value"]
-        allow_conclusion_date = dataDict["allow_conclusion_date"]
-        conclusion_date = dataDict["conclusion_date"]
 
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(glossario:Glossario{{uuid:'{uuid}'}}) \
             SET glossario.name = '{name}',\
@@ -402,15 +350,7 @@ class GlossarioResource(Resource):
             glossario.show_alphabet = '{show_alphabet}',\
             glossario.show_todos = '{show_todos}',\
             glossario.show_special = '{show_special}',\
-            glossario.allow_print = '{allow_print}',\
-            glossario.conclusion_type = '{conclusion_type}',\
-            glossario.view_required = '{view_required}',\
-            glossario.note_required = '{note_required}',\
-            glossario.entry_required = '{entry_required}',\
-            glossario.entry_value = '{entry_value}',\
-            glossario.allow_conclusion_date = '{allow_conclusion_date}',\
-            glossario.conclusion_date = '{conclusion_date}',\
-            glossario.note_required = '{note_required}'\
+            glossario.allow_print = '{allow_print}'\
                  return glossario"
 
         self.db.run(query).data()
@@ -909,7 +849,7 @@ class QuizResource(Resource):
         return jsonify({"Deleted": True})
 
 class ChatResource(Resource):
-
+    
     def __init__(self, database):
         # database is a dependency
         self.db = database
@@ -964,6 +904,78 @@ class ChatResource(Resource):
         uuid = dataDict["uuid"]
 
         query = f"Match (p:User{{email:'{current_user}'}})-[r1]-(activity:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(chat:Chat{{uuid:'{uuid}'}}) DETACH DELETE chat "
+        self.db.run(query)
+
+        return jsonify({"Deleted": True})
+
+class WikiResource(Resource):
+
+    def __init__(self, database):
+        # database is a dependency
+        self.db = database
+
+    @jwt_required
+    def get(self):
+        uuid = request.args.get("uuid")
+        network_id = request.args.get("network_id")
+        current_user = get_jwt_identity()
+        wiki = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(wiki:Wiki{uuid:'%s'}) return wiki" % (current_user, network_id, uuid)).data()
+        return jsonify(wiki)
+
+    @jwt_required
+    def post(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+        uuid = generateUUID()
+
+        
+        wiki = Wiki()
+        wiki.uuid = uuid
+        wiki.name = dataDict["name"]
+        wiki.description = dataDict["description"]
+        wiki.wikimode = dataDict["wikimode"]
+        wiki.firstpagetitle = dataDict["firstpagetitle"]
+        wiki.defaultformat = dataDict["defaultformat"]
+
+        self.db.push(wiki)
+
+        Network.addWiki(self.db, current_user, dataDict["network_id"], uuid)
+        return jsonify({"sucess": True})
+
+    @jwt_required
+    def put(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+        network_id = dataDict["network_id"]
+        uuid = dataDict["uuid"]
+
+        name = dataDict["name"]
+        description = dataDict["description"]
+        wikimode = dataDict["wikimode"]
+        firstpagetitle = dataDict["firstpagetitle"]
+        defaultformat = dataDict["defaultformat"]
+
+        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(wiki:Wiki{{uuid:'{uuid}'}}) \
+            SET wiki.name = '{name}',\
+            wiki.description = '{description}',\
+            wiki.wikimode = '{wikimode}',\
+            wiki.firstpagetitle = '{firstpagetitle}',\
+            wiki.defaultformat = '{defaultformat}'\
+            return wiki"
+
+        self.db.run(query).data()
+
+        return jsonify({"updated": True})
+
+    @jwt_required
+    def delete(self):
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+
+        network_id = dataDict["network_id"]
+        uuid = dataDict["uuid"]
+
+        query = f"Match (p:User{{email:'{current_user}'}})-[r1]-(activity:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(wiki:Wiki{{uuid:'{uuid}'}}) DETACH DELETE wiki "
         self.db.run(query)
 
         return jsonify({"Deleted": True})

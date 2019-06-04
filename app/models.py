@@ -98,6 +98,18 @@ class Chat(BaseModel):
     name = Property()
     description = Property()
 
+class Wiki(BaseModel):
+    
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    name = Property()
+    description = Property()
+    wikimode = Property()
+    firstpagetitle = Property()
+    defaultformat = Property()
+
 class File(BaseModel):
     
     __primarykey__ = 'uuid'
@@ -125,27 +137,11 @@ class Forum(BaseModel):
     description = Property()
     type_forum = Property()
 
-    max_size_upload = Property()
-    max_files = Property()
-    show_word_count = Property()
-
-    signature_mode = Property()
-    read_monitor  = Property()
-
-    conclusion_type = Property()
-    view_required = Property()
-    note_required = Property()
-    messages_required = Property()
-    num_messages = Property()
-
-    discussion_required = Property()
-    num_discussions = Property()
-
-    replicas_required = Property()
-    num_replicas = Property()
-
-    allow_conclusion_date = Property()
-    conclusion_date = Property()
+    maxbytes = Property()
+    maxattachments = Property()
+    displaywordcount = Property()
+    forcesubscribe = Property()
+    trackingtype = Property()
 
 class Glossario(BaseModel):
     
@@ -235,7 +231,6 @@ class ExternTool(BaseModel):
     uuid = Property()
 
     name = Property()
-    description = Property()
     description = Property()
     show_description_course = Property()
     show_activity = Property()
@@ -362,6 +357,9 @@ class Network(BaseModel):
 
     def addChat(graph, user, id, chat_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (chat:Chat{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(chat)" % (user ,id, chat_id))
+    
+    def addWiki(graph, user, id, wiki_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (wiki:Wiki{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(wiki)" % (user ,id, wiki_id))
 
     def addFile(graph, user, id, file_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (file:File{uuid: '%s'}) CREATE (a)-[:HAS_RESOURCE]->(file)" % (user ,id, file_id))
