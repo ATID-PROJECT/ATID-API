@@ -43,15 +43,27 @@ def registerCourse( db, current_id, network_id, current_user, fullname, shortnam
     course.id = current_id
     course.fullname = fullname
     course.shortname = shortname
+    course.network_id = network_id
+    course.created_at = getCurrentDate()
     
     db.push(course)
 
     Network.addCourse(db, current_user, network_id, current_id)
-
+    
 def createChat(url_base, token, course_id, name, description):
     
     function = "local_wstemplate_handle_chat"
     params = f"&name={name}&description={description}&course_id={course_id}"
+    final_url = str( url_base + "/" +(url_moodle.format(token, function+params)))
+    r = requests.post( final_url, data={} )
+    result = r.json()
+
+    return "ok"
+
+def createWiki(url_base, token, course_id, name, description, wikimode, firstpagetitle, defaultformat):
+    
+    function = "local_wstemplate_handle_wiki"
+    params = f"&name={name}&description={description}&course_id={course_id}&wikimode={wikimode}&firstpagetitle={firstpagetitle}&defaultformat={defaultformat}"
     final_url = str( url_base + "/" +(url_moodle.format(token, function+params)))
     r = requests.post( final_url, data={} )
     result = r.json()
@@ -67,8 +79,6 @@ displayformat, approvaldisplayformat, entbypage, showalphabet, showall, showspec
         entbypage={entbypage}&showalphabet={showalphabet}&showall={showall}&showspecial={showspecial}&allowprintview={allowprintview}"
     final_url = str( url_base + "/" +(url_moodle.format(token, function+params)))
 
-    print("========= glossario ==========",file=sys.stderr)
-    print(final_url, file=sys.stderr)
     r = requests.post( final_url, data={} )
     result = r.json()
 
@@ -117,6 +127,46 @@ timeavailablefrom,timeavailableto, timeviewfrom, timeviewto):
 
     return "ok"
 
+def createChoiceOption(url_base, token, choiceid, text, maxanswers):
+    
+
+    function = "local_wstemplate_handle_choice_option"
+    params = f"&choiceid={int(choiceid)}&text={text}&maxanswers={int(maxanswers)}"
+    final_url = str( url_base + "/" +(url_moodle.format(token, function+params)))
+    
+    r = requests.post( final_url, data={} )
+    result = r.json()
+
+    return "ok"
+
+def createQuiz(url_base, token, course_id, name, description, timeopen, timeclose):
+
+    print("____________", file=sys.stderr)
+    function = "local_wstemplate_handle_quiz"
+    params = f"&course_id={course_id}&name={name}&description={description}&timeopen={timeopen}&timeclose={timeclose}"
+    final_url = str( url_base + "/" +(url_moodle.format(token, function+params)))
+    
+    print(final_url, file=sys.stderr)
+    r = requests.post( final_url, data={} )
+    result = r.json()
+
+    return "ok"
+
+def createChoice(url_base, token, course_id, name, description, allowupdate, allowmultiple, limitanswers, choice_questions):
+    
+    function = "local_wstemplate_handle_choice"
+
+    params = f"&name={name}&description={description}&course_id={course_id}&allowupdate={getValueFromCheckbox(allowupdate)}&allowmultiple={getValueFromCheckbox(allowmultiple)}&limitanswers={getValueFromCheckbox(limitanswers)}"
+    final_url = str( url_base + "/" +(url_moodle.format(token, function+params)))
+
+    r = requests.post( final_url, data={} )
+    result = r.json()
+
+    for c in choice_questions:
+        createChoiceOption(url_base, token, result['id'], c, 0)
+        
+    return "ok"
+
 def createCourse(url_base, token, fullname, shortname, db, network_id, current_user):
     function = "core_course_create_courses"
     
@@ -149,6 +199,13 @@ def createQuestion(item, url_base, token, course_id):
         return createGlossario( url_base, token, course_id, item['name'], item['description'], item['type_glossario'], item['allow_new_item'], item['allow_edit'],
         item['allow_repeat_item'],item['allow_comments'],item['allow_automatic_links'],item['type_view'],item['type_view_approved'],item['num_items_by_page'],
         item['show_alphabet'],item['show_todos'],item['show_special'],item['allow_print'] )
+    elif label == "wiki":
+        return createWiki( url_base, token, course_id, item['name'], item['description'], item['wikimode'], item['firstpagetitle'], item['defaultformat'])
+    elif label == "choice":
+        return createChoice( url_base, token, course_id, item['name'], item['description'], item['allow_choice_update'],item['allow_multiple_choices'],
+        item['allow_limit_answers'], item['choice_questions'])
+    elif label == "quiz":
+        return createQuiz( url_base, token, course_id, item['name'], item['description'], item['open_date'], item['end_date'])
     elif label == "assign":
         return createAssign(token, course_id, item['name'], item['description'], item['wikimode'], item['firstpagetitle'], item['defaultformat'])
 
@@ -168,12 +225,8 @@ def makeCourse(db: Graph):
     result = createCourse(network['url'], network['token'], fullname, shortname, db, network_id, current_user)
     id_course = result['id']
 
-    print("======================",file=sys.stderr)
-    print(len(all_questions), file=sys.stderr)
-
     for question in all_questions:
         item = dict(question['q'])
-        print(item, file=sys.stderr)
         createQuestion( item, network['url'] , network['token'], int(id_course))
     
     return jsonify({"message": "curso criado com sucesso", "status": 200}), 200
@@ -188,7 +241,7 @@ def moodleTest(db: Graph):
     url_base = request.args.get("url")
     network_id = request.args.get("network_id")
     token = request.args.get("token")
-    print(str( url_base + "/" +(url_moodle.format(token, function))), file=sys.stderr)
+
     with urllib.request.urlopen(str( url_base + "/" +(url_moodle.format(token, function)))) as url:
         data = json.loads(url.read().decode())
         if 'exception' in data:
@@ -281,6 +334,7 @@ def getCurrentTime():
 def get_by_id_Network(db: Graph):
     current_user = get_jwt_identity()
     result = Network.fetch_by_id(db, current_user, request.args.get("id"))
+    print( result, file=sys.stderr)
     return jsonify(result)
 
 @account_controller.route('/users/activity/getAll', methods=['GET'])
@@ -290,6 +344,7 @@ def getall_Network(db: Graph):
     page = int(request.args.get("page"))-1
     size = int(request.args.get("page_size"))
     result = Network.fetch_all_by_user(db, current_user, size*page, size)
+
     return jsonify(result)
 
 def generateUUID():

@@ -71,7 +71,7 @@ def courses_getall(db: Graph):
     size = int(request.args.get("page_size"))
     
     courses = db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network)-[r:HAS_COURSE]-(course) set course.label = labels(course)[0] return \
-    course.id as id, course.fullname as fullname, course.shortname as shortname, a.id as network  SKIP %s LIMIT %s" % (current_user, page*size, size)).data()
+    course.id as id, course.fullname as fullname, course.shortname as shortname, course.network_id as network_id, a.id as network ORDER BY course.created_at ASC SKIP %s LIMIT %s" % (current_user, page*size, size)).data()
     return jsonify(courses)
 
 

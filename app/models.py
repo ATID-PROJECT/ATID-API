@@ -46,6 +46,13 @@ class Course(BaseModel):
     id = Property()
     fullname = Property()
     shortname = Property()
+    network_id = Property()
+
+    def fetch_all_by_user(graph, email, offset, limit):
+        return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Course) return activity ORDER BY id DESC SKIP %s LIMIT %s" % (email, offset, limit)).data()
+
+    def fetch_by_id(graph, user, id):
+        return graph.evaluate("Match (p:User{email:'%s'})-[r]-(activity)-[r2]-(course:Course{id:'%s'}) return course " % (user, id))
 
 class SubNetwork(BaseModel):
 
