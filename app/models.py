@@ -54,6 +54,31 @@ class Course(BaseModel):
     def fetch_by_id(graph, user, id):
         return graph.evaluate("Match (p:User{email:'%s'})-[r]-(activity)-[r2]-(course:Course{id:'%s'}) return course " % (user, id))
 
+    def addChat(graph, user, course_id, chat_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:'%s'}), (chat:ChatInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(chat)" % (user , course_id, chat_id))
+    
+    def addDatabase(graph, user, course_id, data_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:'%s'}), (database:DatabaseInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(database)" % (user , course_id, data_id))
+
+    def addForum(graph, user, course_id, forum_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:'%s'}), (forum:ForumInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(forum)" % (user , course_id, forum_id))
+
+    def addExternTool(graph, user, course_id, lti_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:'%s'}), (lti:ExternToolInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(lti)" % (user , course_id, lti_id))
+
+    def addGlossario(graph, user, course_id, glossario_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:'%s'}), (glossario:GlossarioInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(glossario)" % (user , course_id, glossario_id))
+
+    def addWiki(graph, user, course_id, wiki_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:'%s'}), (wiki:WikiInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(wiki)" % (user , course_id, wiki_id))
+
+    def addChoice(graph, user, course_id, choice_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:'%s'}), (choice:ChoiceInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(choice)" % (user , course_id, choice_id))
+
+    def addQuiz(graph, user, course_id, quiz_id):
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:'%s'}), (quiz:QuizInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(quiz)" % (user , course_id, quiz_id))
+
+
 class SubNetwork(BaseModel):
 
     __primarykey__ = 'uuid'
@@ -96,6 +121,15 @@ class Quiz(BaseModel):
         print("___________________________")
         return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Network{id: '%s'})-[r2]-(quiz:Quiz) return quiz SKIP %s LIMIT %s" % (email, activity, offset, limit)).data()
 
+class QuizInstance(BaseModel):
+    
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    id_quiz = Property()
+    id_instance = Property()
+
 class Chat(BaseModel):
     
     __primarykey__ = 'uuid'
@@ -104,6 +138,15 @@ class Chat(BaseModel):
 
     name = Property()
     description = Property()
+
+class ChatInstance(BaseModel):
+
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    id_chat = Property()
+    id_instance = Property()
 
 class Wiki(BaseModel):
     
@@ -116,6 +159,15 @@ class Wiki(BaseModel):
     wikimode = Property()
     firstpagetitle = Property()
     defaultformat = Property()
+
+class WikiInstance(BaseModel):
+    
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    id_wiki = Property()
+    id_instance = Property()
 
 class File(BaseModel):
     
@@ -150,6 +202,15 @@ class Forum(BaseModel):
     forcesubscribe = Property()
     trackingtype = Property()
 
+class ForumInstance(BaseModel):
+    
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    id_forum = Property()
+    id_instance = Property()
+
 class Glossario(BaseModel):
     
     __primarykey__ = 'uuid'
@@ -180,6 +241,15 @@ class Glossario(BaseModel):
     entry_required = Property()
     entry_value = Property()
     conclusion_date = Property()
+
+class GlossarioInstance(BaseModel):
+    
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    id_glossario = Property()
+    id_instance = Property()
 
 class Search(BaseModel):
     
@@ -256,6 +326,15 @@ class ExternTool(BaseModel):
     share_email = Property()
     accept_notes = Property()
 
+class ExternToolInstance(BaseModel):
+    
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    id_extern_tool = Property()
+    id_instance = Property()
+
 class Lesson(BaseModel):
 
     __primarykey__ = 'uuid'
@@ -299,6 +378,15 @@ class Choice(BaseModel):
     allow_limit_answers = Property()
     choice_questions = Property()
 
+class ChoiceInstance(BaseModel):
+    
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    id_choice = Property()
+    id_instance = Property()
+
 class Database(BaseModel):
 
     __primarykey__ = 'uuid'
@@ -322,6 +410,15 @@ class Database(BaseModel):
     allow_read_only = Property()
     allow_open_date = Property()
     allow_end_date = Property()
+
+class DatabaseInstance(BaseModel):
+    
+    __primarykey__ = 'uuid'
+
+    uuid = Property()
+
+    id_database = Property()
+    id_instance = Property()
 
 class Network(BaseModel):
 

@@ -16,6 +16,8 @@ LHOST = 'localhost'
 LPORT = '3306'
 ENABLE_SEND_EMAIL = true
 
+URL_MOODLE = "webservice/rest/server.php?wstoken={0}&wsfunction={1}&moodlewsrestformat=json"
+
 [development]
 TESTING = false
 WTF_CSRF_ENABLED = true

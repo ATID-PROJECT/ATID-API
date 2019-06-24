@@ -18,6 +18,7 @@ from flask_restful import Resource
 
 import urllib.request, json 
 from app.models import *
+from .general.entitys import *
 
 from injector import CallableProvider, inject
 
@@ -71,7 +72,7 @@ def courses_getall(db: Graph):
     size = int(request.args.get("page_size"))
     
     courses = db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network)-[r:HAS_COURSE]-(course) set course.label = labels(course)[0] return \
-    course.id as id, course.fullname as fullname, course.shortname as shortname, course.network_id as network_id, a.id as network ORDER BY course.created_at ASC SKIP %s LIMIT %s" % (current_user, page*size, size)).data()
+    course.id as id, course.fullname as fullname, course.shortname as shortname, course.network_id as network_id, a.id as network ORDER BY course.created_at DESC SKIP %s LIMIT %s" % (current_user, page*size, size)).data()
     return jsonify(courses)
 
 
@@ -132,6 +133,7 @@ class ExternToolResource(Resource):
 
     @jwt_required
     def put(self):
+        
         dataDict = request.get_json(force=True)
         current_user = get_jwt_identity()
         network_id = dataDict["network_id"]
@@ -164,10 +166,24 @@ class ExternToolResource(Resource):
             externtool.pre_config = '{pre_config}',\
             externtool.key_consumer = '{key_consumer}',\
             externtool.key_secret = '{key_secret}',\
-            externtool.custom_params = '{custom_params}',\
+            externtool.custom_params = '{custom_params}'\
                  return externtool"
-
+        
         self.db.run(query).data()
+        
+        lti = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(lti:ExternTool{uuid:'%s'}) return lti" % (current_user, network_id, uuid)).data()        
+        network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
+        
+        uuid_lti = lti[0]['lti']['uuid']
+        
+        all_instances = self.db.run("MATCH (instance:ExternToolInstance{id_extern_tool: '%s'}) return instance" % (uuid_lti)).data()
+        
+        #atualizar todas 'turmas' já criadas
+        for instance in all_instances:
+            result = instance['instance']
+            updateExterntool(network['url'], network['token'], result['id_instance'], name, description, show_description_course, show_activity, show_description_activity,
+                pre_config_url, url_tool, url_tool_ssl, pre_config, key_consumer, key_secret, custom_params)
+        
 
         return jsonify({"updated": True})
 
@@ -215,11 +231,11 @@ class ForumResource(Resource):
             forum.displaywordcount = dataDict["displaywordcount"]
             forum.forcesubscribe = dataDict["forcesubscribe"]
             forum.trackingtype = dataDict["trackingtype"]
-
         
             self.db.push(forum)
 
             Network.addForum(self.db, current_user, dataDict["network_id"], uuid)
+            
         except Exception as e:
             print("ERRO:",file=sys.stderr)
             print(str(e), file=sys.stderr)
@@ -254,6 +270,20 @@ class ForumResource(Resource):
 
         self.db.run(query).data()
 
+        forum = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(forum:Forum{uuid:'%s'}) return forum" % (current_user, network_id, uuid)).data()        
+        network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
+
+        uuid_forum = forum[0]['forum']['uuid']
+        
+        all_instances = self.db.run("MATCH (instance:ForumInstance{id_forum: '%s'}) return instance" % (uuid_forum)).data()
+
+        #atualizar todas 'turmas' já criadas
+        for instance in all_instances:
+            result = instance['instance']
+            updateForum(network['url'], network['token'], result['id_instance'], name, description, type_forum, maxbytes, 
+                maxattachments, displaywordcount, forcesubscribe, trackingtype)
+        
+
         return jsonify({"updated": True})
 
     @jwt_required
@@ -264,7 +294,7 @@ class ForumResource(Resource):
         network_id = dataDict["network_id"]
         uuid = dataDict["uuid"]
 
-        query = f"Match (p:User{{email:'{current_user}'}})-[r1]-(forum:Forum{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(forum:Forum{{uuid:'{uuid}'}}) DETACH DELETE forum "
+        query = f"Match (p:User{{email:'{current_user}'}})-[r1]-(n:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(forum:Forum{{uuid:'{uuid}'}}) DETACH DELETE forum "
         self.db.run(query)
 
         return jsonify({"Deleted": True})
@@ -354,6 +384,20 @@ class GlossarioResource(Resource):
                  return glossario"
 
         self.db.run(query).data()
+
+        glossario = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(glossario:Glossario{uuid:'%s'}) return glossario" % (current_user, network_id, uuid)).data()        
+        network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
+        
+        uuid_glossario = glossario[0]['glossario']['uuid']
+        
+        all_instances = self.db.run("MATCH (instance:GlossarioInstance{id_glossario: '%s'}) return instance" % (uuid_glossario)).data()
+        
+        #atualizar todas 'turmas' já criadas
+        for instance in all_instances:
+            result = instance['instance']
+            updateGlossario(network['url'], network['token'], result['id_instance'], name, description, type_glossario, allow_new_item, allow_edit,
+                allow_repeat_item,allow_comments,allow_automatic_links,type_view,type_view_approved,num_items_by_page,
+                show_alphabet,show_todos,show_special,allow_print)
 
         return jsonify({"updated": True})
 
@@ -893,6 +937,18 @@ class ChatResource(Resource):
 
         self.db.run(query).data()
 
+        chat = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(chat:Chat{uuid:'%s'}) return chat" % (current_user, network_id, uuid)).data()        
+        network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
+
+        uuid_chat = chat[0]['chat']['uuid']
+        
+        all_instances = self.db.run("MATCH (instance:ChatInstance{id_chat: '%s'}) return instance" % (uuid_chat)).data()
+
+        #atualizar todas 'turmas' já criadas
+        for instance in all_instances:
+            result = instance['instance']
+            updateChat(network['url'], network['token'], result['id_instance'], name, description)
+
         return jsonify({"updated": True})
 
     @jwt_required
@@ -1175,6 +1231,20 @@ class DatabaseResource(Resource):
         self.db.run(query).data()
 
         Network.addQuiz(self.db, current_user, network_id, uuid)
+
+        database = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(database:Database{uuid:'%s'}) return database" % (current_user, network_id, uuid)).data()        
+        network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
+
+        uuid_database = database[0]['database']['uuid']
+        
+        all_instances = self.db.run("MATCH (instance:DatabaseInstance{id_database: '%s'}) return instance" % (uuid_database)).data()
+
+        #atualizar todas 'turmas' já criadas
+        for instance in all_instances:
+            result = instance['instance']
+            updateDatabase(network['url'], network['token'], result['id_instance'], name, description, approval_required, allow_edit_approval_entries, allow_comment, 
+                required_before_viewing, max_entries, open_date, end_date, read_only, read_only_end)
+
         return jsonify({"updated": True})
 
     @jwt_required

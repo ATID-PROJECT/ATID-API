@@ -1,7 +1,7 @@
 from flask import Flask
 
 from .views import start_controller
-from .account import account_controller
+from .general import account_controller
 
 from flask_migrate import Migrate
 from flask_login import LoginManager
