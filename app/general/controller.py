@@ -148,10 +148,10 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
 
     elif label == "wiki":
         wiki = createWiki( url_base, token, course_id, item['name'], item['description'], item['wikimode'], item['firstpagetitle'], item['defaultformat'])
-
+ 
         wiki_instance = WikiInstance()
         wiki_instance.uuid = generateUUID()
-        wiki_instance.id_extern_tool = item['uuid']
+        wiki_instance.id_wiki = item['uuid']
         wiki_instance.id_instance = wiki['id']
 
         db.push( wiki_instance )
@@ -176,12 +176,13 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
 
         quiz_instance = QuizInstance()
         quiz_instance.uuid = generateUUID()
-        quiz_instance.id_extern_tool = item['uuid']
+        quiz_instance.id_quiz = item['uuid']
         quiz_instance.id_instance = quiz['id']
-
+        
         db.push( quiz_instance )
 
-        Course.addQuiz(db, current_user, course_id, choice['id'])
+        Course.addQuiz(db, current_user, course_id, quiz['id'])
+        
 
     elif label == "assign":
         return createAssign(token, course_id, item['name'], item['description'], item['wikimode'], item['firstpagetitle'], item['defaultformat'])

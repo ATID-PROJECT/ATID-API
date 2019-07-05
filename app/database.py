@@ -1,4 +1,4 @@
 from py2neo import Graph
 from dynaconf import settings
 
-db = Graph(host="umurl.com",password=settings.PASS_DATABASE)
+db = Graph(host=settings.HOST_URL,password=settings.PASS_DATABASE)

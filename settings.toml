@@ -12,6 +12,8 @@ USER_DATABASE = 'root'
 PASS_DATABASE = 'admin'
 NAME_DATABASE = ''
 
+HOST_URL = 'umurl.com'
+
 LHOST = 'localhost'
 LPORT = '3306'
 ENABLE_SEND_EMAIL = true

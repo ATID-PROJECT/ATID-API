@@ -108,7 +108,6 @@ class ExternToolResource(Resource):
             externtool.show_activity = dataDict["show_activity"]
             externtool.show_description_activity = dataDict["show_description_activity"]
 
-
             externtool.pre_config_url = dataDict["pre_config_url"]
             externtool.url_tool = dataDict["url_tool"]
             externtool.url_tool_ssl = dataDict["url_tool_ssl"]
@@ -877,6 +876,19 @@ class QuizResource(Resource):
 
         self.db.run(query).data()
 
+        quiz = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(quiz:Quiz{uuid:'%s'}) return quiz" % (current_user, network_id, uuid)).data()        
+        network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
+        
+        uuid_quiz = quiz[0]['quiz']['uuid']
+
+        all_instances = self.db.run("MATCH (instance:QuizInstance{id_quiz: '%s'}) return instance" % (uuid_quiz)).data()
+
+        #atualizar todas 'turmas' já criadas
+        for instance in all_instances:
+            result = instance['instance']
+            updateQuiz(network['url'], network['token'], result['id_instance'], name, description, open_date, end_date )
+
+
         return jsonify({"updated": True})
 
     @jwt_required
@@ -1020,6 +1032,18 @@ class WikiResource(Resource):
             return wiki"
 
         self.db.run(query).data()
+
+        wiki = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(wiki:Wiki{uuid:'%s'}) return wiki" % (current_user, network_id, uuid)).data()        
+        network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
+        
+        uuid_wiki = wiki[0]['wiki']['uuid']
+
+        all_instances = self.db.run("MATCH (instance:WikiInstance{id_wiki: '%s'}) return instance" % (uuid_wiki)).data()
+
+        #atualizar todas 'turmas' já criadas
+        for instance in all_instances:
+            result = instance['instance']
+            updateWiki(network['url'], network['token'], result['id_instance'], name, description, wikimode, firstpagetitle, defaultformat)
 
         return jsonify({"updated": True})
 
@@ -1229,8 +1253,6 @@ class DatabaseResource(Resource):
              return database"
 
         self.db.run(query).data()
-
-        Network.addQuiz(self.db, current_user, network_id, uuid)
 
         database = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(database:Database{uuid:'%s'}) return database" % (current_user, network_id, uuid)).data()        
         network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
