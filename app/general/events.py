@@ -12,9 +12,9 @@ def getBestNote(url_base, token, userid, quizid):
 
     return result[0]
 
-def userCompletQuiz(id_quiz, id_user, url_moodle):
+def userCompletQuiz(id_course, id_quiz, id_user, url_moodle):
 
-    all_instances = db.run("MATCH (a:Network{url:'%s'})-[r2]-(c:Course{id:%s})-[r3]-(instance:QuizInstance{id_instance:%s}) return instance" % (url_moodle, course_id, item_id)).data()
+    all_instances = db.run("MATCH (a:Network{url:'%s'})-[r2]-(c:Course{id:%s})-[r3]-(instance:QuizInstance{id_instance:%s}) return instance" % (url_moodle, id_course, id_quiz)).data()
 
     result = all_instances[0]['instance']
 
@@ -23,4 +23,4 @@ def userCompletQuiz(id_quiz, id_user, url_moodle):
 
     
     best_grade = getBestNote(url_moodle, network['token'], id_user, id_quiz)
-    print(best_grade, file=sys.stderer)
+    print(str(best_grade), file=sys.stderer)

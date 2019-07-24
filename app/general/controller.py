@@ -253,9 +253,10 @@ def eventQuiz(db: Graph):
         print(request.form, file=sys.stderr)
         id_quiz = request.form['id_quiz']
         id_user = request_form['id_user']
+        id_course = request.form['id_course']
         url_item = request.form['url_item']
 
-        userCompletQuiz(id_quiz, id_user, url_item)
+        userCompletQuiz(id_course, id_quiz, id_user, url_item)
     
 @account_controller.route('/moodle/update/', methods=['GET','POST','PUT'])
 def updateQuestion(db: Graph):
