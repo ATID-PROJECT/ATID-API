@@ -71,121 +71,150 @@ def createCourse(url_base, token, fullname, shortname, db, network_id, current_u
 
     return result[0]
 
+def createGroup( url_base, token, course_id, name, description ):
+    function = "core_group_create_groups"
+
+    params = f"&groups[0][name]={name}&groups[0][description]={description}&groups[0][courseid]={course_id}"
+    final_url = str( url_base + "/" +(settings.URL_MOODLE.format(token, function+params)))
+
+    r = requests.post( final_url, data={} )
+    result = r.json()
+
+    return result
+
 def createQuestion(item, url_base, token, course_id, db = None, current_user=""):
     
     label = str(item['label']).lower()
-    print(label, file=sys.stderr)
     
     if label == "chat":
-        chat =  createChat( url_base, token, course_id, item['name'], item['description'] )
+        
+        group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
+        
+        chat =  createChat( url_base, token, course_id, item['name'], item['description'], group['id'] )
         
         chat_instance = ChatInstance()
         chat_instance.uuid = generateUUID()
         chat_instance.id_chat = item['uuid']
+        chat_instance.id_group = group['id']
         chat_instance.id_instance = chat['id']
 
         db.push( chat_instance )
 
-        Course.addChat(db, current_user, course_id, chat['id'])
+        Course.addChat(db, current_user, course_id, chat_instance.uuid)
 
     elif label == "database":
-        
+        group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
+
         data = createDatabase( url_base, token, course_id, item['name'], item['description'], item['approval_required'], item['allow_edit_approval_entries'], item['allow_comment'], 
-        item['required_before_viewing'], item['max_entries'], item['open_date'], item['end_date'], item['read_only'], item['read_only_end'])
+        item['required_before_viewing'], item['max_entries'], item['open_date'], item['end_date'], item['read_only'], item['read_only_end'], group['id'])
         data_instance = DatabaseInstance()
         data_instance.uuid = generateUUID()
         data_instance.id_database = item['uuid']
         data_instance.id_instance = data['id']
+        data_instance.id_group = group['id']
 
         db.push( data_instance )
 
-        Course.addDatabase(db, current_user, course_id, data['id'])
+        Course.addDatabase(db, current_user, course_id, data_instance.uuid)
 
     elif label == "forum":
-        
-        forum = createForum( url_base, token, course_id, item['name'], item['description'], item['type_forum'], item['maxbytes'], item['maxattachments'], item['displaywordcount'], item['forcesubscribe'], item['trackingtype'] )
+        group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
+        forum = createForum( url_base, token, course_id, item['name'], item['description'], item['type_forum'], item['maxbytes'], item['maxattachments'], \
+            item['displaywordcount'], item['forcesubscribe'], item['trackingtype'], group['id'] )
 
         forum_instance = ForumInstance()
         forum_instance.uuid = generateUUID()
         forum_instance.id_forum = item['uuid']
         forum_instance.id_instance = forum['id']
-
+        forum_instance.id_group = group['id']
+        
         db.push( forum_instance )
-
-        Course.addForum(db, current_user, course_id, forum['id'])
+        Course.addForum(db, current_user, course_id, forum_instance.uuid)
 
     elif label == "externtool":
+        group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
         lti = createExterntool( url_base, token, course_id, item['name'], item['description'], item['show_description_course'], item['show_activity'], item['show_description_activity'],
-        item['pre_config_url'], item['url_tool'], item['url_tool_ssl'], item['pre_config'], item['key_consumer'], item['key_secret'], item['custom_params'] )
-
-        print("++++++_________+++++++++", file=sys.stderr)
-        print(lti, file=sys.stderr)
+        item['pre_config_url'], item['url_tool'], item['url_tool_ssl'], item['pre_config'], item['key_consumer'], item['key_secret'], item['custom_params'], group['id'] )
+    
         lti_instance = ExternToolInstance()
         lti_instance.uuid = generateUUID()
+        
         lti_instance.id_extern_tool = item['uuid']
         lti_instance.id_instance = lti['id']
-
+        lti_instance.id_group = group['id']
+        
         db.push( lti_instance )
 
-        Course.addExternTool(db, current_user, course_id, lti['id'])
+        Course.addExternTool(db, current_user, course_id, lti_instance.uuid)
         
 
     elif label == "glossario":
+        group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
+
         glossario = createGlossario( url_base, token, course_id, item['name'], item['description'], item['type_glossario'], item['allow_new_item'], item['allow_edit'],
         item['allow_repeat_item'],item['allow_comments'],item['allow_automatic_links'],item['type_view'],item['type_view_approved'],item['num_items_by_page'],
-        item['show_alphabet'],item['show_todos'],item['show_special'],item['allow_print'] )
+        item['show_alphabet'],item['show_todos'],item['show_special'],item['allow_print'], group['id'] )
         
         glossario_instance = GlossarioInstance()
         glossario_instance.uuid = generateUUID()
 
+        glossario_instance.id_group = group['id']
         glossario_instance.id_glossario = item['uuid']
         glossario_instance.id_instance = glossario['id']
         
         db.push( glossario_instance )
 
-        Course.addGlossario(db, current_user, course_id, glossario['id'])
+        Course.addGlossario(db, current_user, course_id, glossario_instance.uuid)
         
 
     elif label == "wiki":
-        wiki = createWiki( url_base, token, course_id, item['name'], item['description'], item['wikimode'], item['firstpagetitle'], item['defaultformat'])
+        group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
+        wiki = createWiki( url_base, token, course_id, item['name'], item['description'], item['wikimode'],\
+             item['firstpagetitle'], item['defaultformat'], group['id'])
  
         wiki_instance = WikiInstance()
         wiki_instance.uuid = generateUUID()
         wiki_instance.id_wiki = item['uuid']
+        wiki_instance.id_group = group['id']
         wiki_instance.id_instance = wiki['id']
 
         db.push( wiki_instance )
 
-        Course.addWiki(db, current_user, course_id, wiki['id'])
+        Course.addWiki(db, current_user, course_id, wiki_instance.uuid)
 
     elif label == "choice":
+        group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
         choice = createChoice( url_base, token, course_id, item['name'], item['description'], item['allow_choice_update'],item['allow_multiple_choices'],
-        item['allow_limit_answers'], item['choice_questions'])
+        item['allow_limit_answers'], item['choice_questions'], group['id'])
 
         choice_instance = ChoiceInstance()
         choice_instance.uuid = generateUUID()
         choice_instance.id_extern_tool = item['uuid']
         choice_instance.id_instance = choice['id']
+        choice_instance.id_group = group['id']
 
         db.push( choice_instance )
 
-        Course.addChoice(db, current_user, course_id, choice['id'])
+        Course.addChoice(db, current_user, course_id, choice_instance.uuid)
 
     elif label == "quiz":
-        quiz = createQuiz( url_base, token, course_id, item['name'], item['description'], item['open_date'], item['end_date'])
+        group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
+        quiz = createQuiz( url_base, token, course_id, item['name'], item['description'], item['open_date'], item['end_date'], group['id'])
 
         quiz_instance = QuizInstance()
         quiz_instance.uuid = generateUUID()
         quiz_instance.id_quiz = item['uuid']
+        quiz_instance.id_group = group['id']
         quiz_instance.id_instance = quiz['id']
         
         db.push( quiz_instance )
 
-        Course.addQuiz(db, current_user, course_id, quiz['id'])
+        Course.addQuiz(db, current_user, course_id, quiz_instance.uuid)
         
 
     elif label == "assign":
         return createAssign(token, course_id, item['name'], item['description'], item['wikimode'], item['firstpagetitle'], item['defaultformat'])
+
 
 @account_controller.route('/moodle/new_course', methods=['POST'])
 @jwt_required
@@ -205,9 +234,40 @@ def makeCourse(db: Graph):
     
     for question in all_questions:
         item = dict(question['q'])
-        createQuestion( item, network['url'] , network['token'], int(id_course), db, current_user)
+        try:
+            createQuestion( item, network['url'] , network['token'], int(id_course), db, current_user)
+        except Exception as e:
+            print( str( e) , file=sys.stderr)
+            print( "================" , file=sys.stderr)
     
     return jsonify({"message": "curso criado com sucesso", "status": 200}), 200
+
+from .updateActivitys import updateFromMoodle
+from urllib import parse
+
+@account_controller.route('/moodle/events/quiz/', methods=['GET','POST','PUT'])
+def eventQuiz(db: Graph):
+    if request.method == "PUT":
+
+        print(request.form, file=sys.stderr)
+
+
+    
+@account_controller.route('/moodle/update/', methods=['GET','POST','PUT'])
+def updateQuestion(db: Graph):
+
+    if request.method == "PUT":
+        
+        url_parts = parse.urlparse(request.form['url_item'])
+
+        type_item = request.form['type_item']
+        id_item = request.form['id_item']
+        url_item = f"{url_parts.scheme}://{url_parts.netloc}"
+        id_course = request.form['id_course']
+
+        updateFromMoodle( db, type_item, url_item, id_course, id_item)
+
+    return ""
 
 @account_controller.route('/moodle/students/')
 @jwt_required

@@ -2,13 +2,24 @@ from dynaconf import settings
 import requests
 import sys
 
+def getGlossary( url_base, token, course_id, glossary_id ):
+    function = "get_glossary"
+
+    params = f"&glossary_id={glossary_id}&course_id={course_id}"
+    final_url = str( url_base + "/" +(settings.URL_MOODLE.format(token, function+params)))
+
+    r = requests.post( final_url, data={} )
+    result = r.json()
+
+    return result
+
 def createGlossario(url_base, token, course_id, name, description, mainglossary, defaultapproval, editalways, allowduplicatedentries, allowcomments, usedynalink,
-displayformat, approvaldisplayformat, entbypage, showalphabet, showall, showspecial, allowprintview):
+displayformat, approvaldisplayformat, entbypage, showalphabet, showall, showspecial, allowprintview, group_id):
     
     function = "local_wstemplate_handle_glossary"
     params = f"&name={name}&description={description}&course_id={course_id}&mainglossary={mainglossary}&defaultapproval={defaultapproval}&editalways={editalways}&\
         allowduplicatedentries={allowduplicatedentries}&allowcomments={allowcomments}&usedynalink={usedynalink}&displayformat={displayformat}&approvaldisplayformat={approvaldisplayformat}&\
-        entbypage={entbypage}&showalphabet={showalphabet}&showall={showall}&showspecial={showspecial}&allowprintview={allowprintview}"
+        entbypage={entbypage}&showalphabet={showalphabet}&showall={showall}&showspecial={showspecial}&allowprintview={allowprintview}&group_id={group_id}"
     final_url = str( url_base + "/" +(settings.URL_MOODLE.format(token, function+params)))
     print(final_url, file=sys.stderr)
     r = requests.post( final_url, data={} )

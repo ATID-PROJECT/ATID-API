@@ -95,9 +95,7 @@ class ExternToolResource(Resource):
         dataDict = request.get_json(force=True)
         current_user = get_jwt_identity()
         uuid = generateUUID()
-
-
-
+    
         try:
             externtool = ExternTool()
             externtool.uuid = uuid
@@ -247,6 +245,7 @@ class ForumResource(Resource):
         network_id = dataDict["network_id"]
         uuid = dataDict["uuid"]
 
+        print( str(dataDict["displaywordcount"]), file=sys.stderr)
         name = dataDict["name"]
         description = dataDict["description"]
         type_forum = dataDict["type_forum"]

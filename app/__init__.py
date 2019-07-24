@@ -59,6 +59,9 @@ def create_app():
     app.register_blueprint(account_controller)
     app.register_blueprint(start_controller)
 
+    CORS(account_controller, max_age=30*86400)
+    CORS(start_controller, max_age=30*86400)
+
     api = Api(app)
     app.url_map.strict_slashes = False
 

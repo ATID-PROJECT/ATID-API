@@ -1,6 +1,17 @@
 from dynaconf import settings
 import requests
 
+def getChoice( url_base, token, course_id, choice_id ):
+    function = "get_choice"
+
+    params = f"&choice_id={choice_id}&course_id={course_id}"
+    final_url = str( url_base + "/" +(settings.URL_MOODLE.format(token, function+params)))
+
+    r = requests.post( final_url, data={} )
+    result = r.json()
+
+    return result
+
 def createChoiceOption(url_base, token, choiceid, text, maxanswers):
     
     function = "local_wstemplate_handle_choice_option"
@@ -12,11 +23,12 @@ def createChoiceOption(url_base, token, choiceid, text, maxanswers):
 
     return result
 
-def createChoice(url_base, token, course_id, name, description, allowupdate, allowmultiple, limitanswers, choice_questions):
+def createChoice(url_base, token, course_id, name, description, allowupdate, allowmultiple, limitanswers, choice_questions, group_id):
     
     function = "local_wstemplate_handle_choice"
 
-    params = f"&name={name}&description={description}&course_id={course_id}&allowupdate={getValueFromCheckbox(allowupdate)}&allowmultiple={getValueFromCheckbox(allowmultiple)}&limitanswers={getValueFromCheckbox(limitanswers)}"
+    params = f"&name={name}&description={description}&course_id={course_id}&allowupdate={getValueFromCheckbox(allowupdate)}&\
+        allowmultiple={getValueFromCheckbox(allowmultiple)}&limitanswers={getValueFromCheckbox(limitanswers)}&group_id={group_id}"
     final_url = str( url_base + "/" +(settings.URL_MOODLE.format(token, function+params)))
 
     r = requests.post( final_url, data={} )

@@ -39,6 +39,7 @@ class User(BaseModel):
         condicao = "_.email = '{0}' AND _.passwod = '{1}'".format(email, password)
         return User.match(graph, email).where( condicao ).first()
 
+import sys
 class Course(BaseModel):
     
     __primarykey__ = 'id'
@@ -55,28 +56,30 @@ class Course(BaseModel):
         return graph.evaluate("Match (p:User{email:'%s'})-[r]-(activity)-[r2]-(course:Course{id:'%s'}) return course " % (user, id))
 
     def addChat(graph, user, course_id, chat_id):
-        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:'%s'}), (chat:ChatInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(chat)" % (user , course_id, chat_id))
+        oi = "MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:%d}), (chat:ChatInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(chat)" % (user , int(course_id), chat_id)
+        print( oi , file=sys.stderr)
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:%d}), (chat:ChatInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(chat)" % (user , int(course_id), chat_id))
     
     def addDatabase(graph, user, course_id, data_id):
-        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:'%s'}), (database:DatabaseInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(database)" % (user , course_id, data_id))
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:%s}), (database:DatabaseInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(database)" % (user , course_id, data_id))
 
     def addForum(graph, user, course_id, forum_id):
-        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:'%s'}), (forum:ForumInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(forum)" % (user , course_id, forum_id))
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:%s}), (forum:ForumInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(forum)" % (user , course_id, forum_id))
 
     def addExternTool(graph, user, course_id, lti_id):
-        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:'%s'}), (lti:ExternToolInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(lti)" % (user , course_id, lti_id))
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:%s}), (lti:ExternToolInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(lti)" % (user , course_id, lti_id))
 
     def addGlossario(graph, user, course_id, glossario_id):
-        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:'%s'}), (glossario:GlossarioInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(glossario)" % (user , course_id, glossario_id))
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:%s}), (glossario:GlossarioInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(glossario)" % (user , course_id, glossario_id))
 
     def addWiki(graph, user, course_id, wiki_id):
-        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:'%s'}), (wiki:WikiInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(wiki)" % (user , course_id, wiki_id))
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:%s}), (wiki:WikiInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(wiki)" % (user , course_id, wiki_id))
 
     def addChoice(graph, user, course_id, choice_id):
-        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:'%s'}), (choice:ChoiceInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(choice)" % (user , course_id, choice_id))
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:%s}), (choice:ChoiceInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(choice)" % (user , course_id, choice_id))
 
     def addQuiz(graph, user, course_id, quiz_id):
-        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:'%s'}), (quiz:QuizInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(quiz)" % (user , course_id, quiz_id))
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:%s}), (quiz:QuizInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(quiz)" % (user , course_id, quiz_id))
 
 
 class SubNetwork(BaseModel):
@@ -129,6 +132,7 @@ class QuizInstance(BaseModel):
 
     id_quiz = Property()
     id_instance = Property()
+    id_group = Property()
 
 class Chat(BaseModel):
     
@@ -147,6 +151,7 @@ class ChatInstance(BaseModel):
 
     id_chat = Property()
     id_instance = Property()
+    id_group = Property()
 
 class Wiki(BaseModel):
     
@@ -168,6 +173,7 @@ class WikiInstance(BaseModel):
 
     id_wiki = Property()
     id_instance = Property()
+    id_group = Property()
 
 class File(BaseModel):
     
@@ -210,6 +216,7 @@ class ForumInstance(BaseModel):
 
     id_forum = Property()
     id_instance = Property()
+    id_group = Property()
 
 class Glossario(BaseModel):
     
@@ -250,6 +257,7 @@ class GlossarioInstance(BaseModel):
 
     id_glossario = Property()
     id_instance = Property()
+    id_group = Property()
 
 class Search(BaseModel):
     
@@ -334,6 +342,7 @@ class ExternToolInstance(BaseModel):
 
     id_extern_tool = Property()
     id_instance = Property()
+    id_group = Property()
 
 class Lesson(BaseModel):
 
@@ -386,6 +395,7 @@ class ChoiceInstance(BaseModel):
 
     id_choice = Property()
     id_instance = Property()
+    id_group = Property()
 
 class Database(BaseModel):
 
@@ -419,6 +429,7 @@ class DatabaseInstance(BaseModel):
 
     id_database = Property()
     id_instance = Property()
+    id_group = Property()
 
 class Network(BaseModel):
 
