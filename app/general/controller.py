@@ -244,14 +244,18 @@ def makeCourse(db: Graph):
 
 from .updateActivitys import updateFromMoodle
 from urllib import parse
+from .events import *
 
 @account_controller.route('/moodle/events/quiz/', methods=['GET','POST','PUT'])
 def eventQuiz(db: Graph):
     if request.method == "PUT":
 
         print(request.form, file=sys.stderr)
+        id_quiz = request.form['id_quiz']
+        id_user = request_form['id_user']
+        url_item = request.form['url_item']
 
-
+        userCompletQuiz(id_quiz, id_user, url_item)
     
 @account_controller.route('/moodle/update/', methods=['GET','POST','PUT'])
 def updateQuestion(db: Graph):
