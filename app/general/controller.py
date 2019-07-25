@@ -245,7 +245,7 @@ def makeCourse(db: Graph):
 from .updateActivitys import updateFromMoodle
 from urllib import parse
 from .events import userCompletQuiz
-
+import os
 @account_controller.route('/moodle/events/quiz/', methods=['GET','POST','PUT'])
 def eventQuiz(db: Graph):
     if request.method == "PUT":
@@ -258,7 +258,7 @@ def eventQuiz(db: Graph):
 
         try:
             userCompletQuiz(db, id_course, id_quiz, id_user, url_item)
-            return "ok", 200
+            return "ok"
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
