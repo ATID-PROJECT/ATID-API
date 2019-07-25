@@ -260,7 +260,9 @@ def eventQuiz(db: Graph):
             userCompletQuiz(db, id_course, id_quiz, id_user, url_item)
             return "ok", 200
         except Exception as e:
-            print(str(e), file=sys.stderr)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
             return 400
     
 @account_controller.route('/moodle/update/', methods=['GET','POST','PUT'])
