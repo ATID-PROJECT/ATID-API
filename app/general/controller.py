@@ -244,7 +244,7 @@ def makeCourse(db: Graph):
 
 from .updateActivitys import updateFromMoodle
 from urllib import parse
-from .events import *
+from .events import userCompletQuiz
 
 @account_controller.route('/moodle/events/quiz/', methods=['GET','POST','PUT'])
 def eventQuiz(db: Graph):
@@ -252,11 +252,16 @@ def eventQuiz(db: Graph):
 
         print(request.form, file=sys.stderr)
         id_quiz = request.form['id_quiz']
-        id_user = request_form['id_user']
+        id_user = request.form['id_user']
         id_course = request.form['id_course']
         url_item = request.form['url_item']
 
-        userCompletQuiz(id_course, id_quiz, id_user, url_item)
+        try:
+            userCompletQuiz(db, id_course, id_quiz, id_user, url_item)
+            return "ok", 200
+        except Exception as e:
+            print(str(e), file=sys.stderr)
+            return 400
     
 @account_controller.route('/moodle/update/', methods=['GET','POST','PUT'])
 def updateQuestion(db: Graph):
