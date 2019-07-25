@@ -43,6 +43,9 @@ def userCompletQuiz(db, id_course, id_quiz, id_user, url_moodle):
                     target_activity = item
 
             result = db.run(f"MATCH (network:Network{{url:'{url_moodle}'}})-[r2]-(cond:Condition{{id_activity:'{id_activity}'}}) return cond").data()
+
+            if len(result) == 0:
+                return
             result = json.loads( result[0]['cond']['data'] )['default']
 
             best_grade = getBestNote(url_moodle, network['token'], id_user, id_quiz)
