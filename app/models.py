@@ -368,9 +368,10 @@ class Lesson(BaseModel):
 
 class Condition(BaseModel):
     
-    __primarykey__ = 'id_activity'
+    __primarykey__ = 'id_transiction'
 
     id_activity = Property()
+    id_transiction = Property()
     name_activity = Property()
     data = Property()
 
@@ -468,7 +469,7 @@ class Network(BaseModel):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (forum:Forum{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(forum)" % (user ,id, forum_id))
 
     def addCondition(graph, user, id, condition_id):
-        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (condition:Condition{id_activity: '%s'}) CREATE (a)-[:HAS_CONDITION]->(condition)" % (user ,id, condition_id))
+        return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (condition:Condition{id_transiction: '%s'}) CREATE (a)-[:HAS_CONDITION]->(condition)" % (user ,id, condition_id))
 
     def addChat(graph, user, id, chat_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (chat:Chat{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(chat)" % (user ,id, chat_id))

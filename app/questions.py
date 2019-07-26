@@ -747,10 +747,12 @@ class ConditionResource(Resource):
 
     @jwt_required
     def get(self):
-        id_activity = request.args.get("id_activity")
+
         network_id = request.args.get("network_id")
+        id_transiction = request.args.get("id_transiction")
         current_user = get_jwt_identity()
-        condition = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_CONDITION]-(con:Condition{id_activity:'%s'}) return con" % (current_user, network_id, id_activity)).data()
+        
+        condition = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_CONDITION]-(con:Condition{id_transiction:'%s'}) return con" % (current_user, network_id, id_transiction)).data()
         return jsonify(condition)
 
     @jwt_required
@@ -761,12 +763,13 @@ class ConditionResource(Resource):
         print(dataDict, file=sys.stderr)
         condition = Condition()
         condition.id_activity = dataDict["id_activity"]
+        condition.id_transiction = dataDict["id_transiction"]
         condition.name_activity = dataDict["name_activity"]
         condition.data = str(dataDict["data"])
 
         self.db.push(condition)
 
-        Network.addCondition(self.db, current_user, dataDict["network_id"], dataDict["id_activity"])
+        Network.addCondition(self.db, current_user, dataDict["network_id"], dataDict["id_transiction"])
         return jsonify({"sucess": True})
 
     @jwt_required
@@ -774,12 +777,13 @@ class ConditionResource(Resource):
         dataDict = request.get_json(force=True)
         current_user = get_jwt_identity()
         network_id = dataDict["network_id"]
-        id_activity = dataDict["id_activity"]
+
+        id_transiction = dataDict["id_transiction"]
 
         name = dataDict["name_activity"]
         data = str(dataDict["data"])
 
-        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_CONDITION]-(condition:Condition{{id_activity:'{id_activity}'}}) \
+        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_CONDITION]-(condition:Condition{{id_transiction:'{id_transiction}'}}) \
             SET condition.name_activity = '{name}',\
             condition.data = '{data}' return condition"
 
@@ -793,9 +797,9 @@ class ConditionResource(Resource):
         current_user = get_jwt_identity()
 
         network_id = dataDict["network_id"]
-        id_activity = dataDict["id_activity"]
+        id_transiction = dataDict["id_transiction"]
 
-        query = f"Match (p:User{{email:'{current_user}'}})-[r1]-(activity:Network{{id:'{network_id}'}})-[r:HAS_CONDITION]-(condition:Condition{{id_activity:'{id_activity}'}}) DETACH DELETE condition "
+        query = f"Match (p:User{{email:'{current_user}'}})-[r1]-(activity:Network{{id:'{network_id}'}})-[r:HAS_CONDITION]-(condition:Condition{{id_transiction:'{id_transiction}'}}) DETACH DELETE condition "
         self.db.run(query)
 
         return jsonify({"Deleted": True})

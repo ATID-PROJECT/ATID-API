@@ -18,6 +18,11 @@ from py2neo import Relationship, Node
 
 from .entitys import *
 
+from .updateActivitys import updateFromMoodle
+from urllib import parse
+from .events import *
+import os
+
 #sys.path.append("..")
 from app.JWTManager import jwt
 import uuid 
@@ -242,10 +247,6 @@ def makeCourse(db: Graph):
     
     return jsonify({"message": "curso criado com sucesso", "status": 200}), 200
 
-from .updateActivitys import updateFromMoodle
-from urllib import parse
-from .events import userCompletQuiz
-import os
 @account_controller.route('/moodle/events/quiz/', methods=['GET','POST','PUT'])
 def eventQuiz(db: Graph):
     if request.method == "PUT":
