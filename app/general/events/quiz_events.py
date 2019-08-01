@@ -2,15 +2,16 @@ import requests
 import sys
 import json
 import os
+from dynaconf import settings
 
-url_moodle = "webservice/rest/server.php?wstoken={0}&wsfunction={1}&moodlewsrestformat=json"
+from .util import *
 
 def userHasGroup(url_base, token, userid, groupid):
     function = "core_group_get_group_members"
     
     params = f"&groupids[0]={groupid}"
     
-    final_url = str( url_base + "/" +(url_moodle.format(token, function+params)))
+    final_url = str( url_base + "/" +(settings.url_moodle.format(token, function+params)))
 
     r = requests.post( final_url, data={})
     result = r.json()
@@ -26,7 +27,7 @@ def getBestNote(url_base, token, userid, quizid):
     
     params = f"&userid={userid}&quizid={quizid}"
 
-    final_url = str( url_base + "/" +(url_moodle.format(token, function+params)))
+    final_url = str( url_base + "/" +(settings.url_moodle.format(token, function+params)))
     
     r = requests.post( final_url, data={})
     result = r.json()
@@ -114,15 +115,3 @@ def getInstance(db, target_activity, url_moodle, id_course ):
         instance = db.run( f"MATCH (a:Network{{url:'{url_moodle}'}})-[r2]-(c:Course{{id:{id_course}}})-[r3]-(instance:{type_item}Instance{{id_{type_item.lower()}:'{item['uuid']}'}}) return instance").data()[0]['instance']
         
     return instance
-
-def addUserToGroup(url_base, token, id_user, id_group):
-    function = "core_group_add_group_members"
-    
-    params = f"&members[0][userid]={id_user}&members[0][groupid]={id_group}"
-
-    final_url = str( url_base + "/" +(url_moodle.format(token, function+params)))
-
-    r = requests.post( final_url, data={})
-    result = r.json()
-
-    return result

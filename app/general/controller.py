@@ -1,6 +1,7 @@
 import sys
 import hashlib
 import json
+from dynaconf import settings
 from flask import Flask, jsonify, request, make_response
 from flask_jwt_extended import (
     JWTManager, jwt_required, create_access_token,
@@ -265,6 +266,24 @@ def eventQuiz(db: Graph):
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
             return 400
+            
+@account_controller.route('/moodle/events/enrolment/', methods=['GET','POST','PUT'])
+def eventEnrolment(db: Graph):
+    if request.method == "PUT":
+
+        id_user = request.form['id_user']
+        id_course = request.form['id_course']
+        url_host = request.form['url_item']
+
+        try:
+            UserToStart(db, url_host, id_course, id_user)
+            return "ok", 200
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
+            return 400
+    return "not found"
     
 @account_controller.route('/moodle/update/', methods=['GET','POST','PUT'])
 def updateQuestion(db: Graph):
