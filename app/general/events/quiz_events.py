@@ -73,39 +73,45 @@ def getActivityInstance(db, id_course, id_quiz, url_moodle):
     return [id_transiction_list, network['token'], all_instances_list]
 
 def userCompletQuiz(db, id_course, id_quiz, id_user, url_moodle):
-    id_transiction_list, token, all_instances = getActivityInstance( db, id_course, id_quiz, url_moodle )
-   
-    for instance in all_instances:
-        if userHasGroup(url_moodle, token, id_user, instance['id_group']):
-            #user has already passed the fork
-            return
-    for index, instance in enumerate(all_instances):
-        id_transiction = id_transiction_list[index]
+    try:
+        id_transiction_list, token, all_instances = getActivityInstance( db, id_course, id_quiz, url_moodle )
+    
+        for instance in all_instances:
+            if userHasGroup(url_moodle, token, id_user, instance['id_group']):
+                #user has already passed the fork
+                return
+        for index, instance in enumerate(all_instances):
+            id_transiction = id_transiction_list[index]
 
-        best_grade = getBestNote(url_moodle, token, id_user, id_quiz)
-        result = db.run(f"MATCH (network:Network{{url:'{url_moodle}'}})-[r2]-(cond:Condition{{id_transiction:'{id_transiction}'}}) return cond").data()
+            best_grade = getBestNote(url_moodle, token, id_user, id_quiz)
+            result = db.run(f"MATCH (network:Network{{url:'{url_moodle}'}})-[r2]-(cond:Condition{{id_transiction:'{id_transiction}'}}) return cond").data()
 
-        if len(result) == 0:
-            return
-
-        result = json.loads( result[0]['cond']['data'] )['default']
-
-        if result['propriedade'].lower() == "number;Nota recebida".lower() and best_grade['hasgrade']:
-            
-            grade = best_grade['grade']
-            current_note = int( result['valor'] )
-
-            if result['operacao'] == "=" and grade == current_note:
-                addUserToGroup(url_moodle, token,id_user,instance['id_group'])
+            if len(result) == 0:
                 return
 
-            elif result['operacao'] == ">" and current_note > grade:
-                addUserToGroup(url_moodle, token,id_user,instance['id_group'])
-                return
+            result = json.loads( result[0]['cond']['data'] )['default']
 
-            elif result['operacao'] == "<" and current_note < grade:
-                addUserToGroup(url_moodle, token,id_user,instance['id_group'])
-                return
+            if result['propriedade'].lower() == "number;Nota recebida".lower() and best_grade['hasgrade']:
+                
+                grade = best_grade['grade']
+                current_note = int( result['valor'] )
+
+                if result['operacao'] == "=" and grade == current_note:
+                    addUserToGroup(url_moodle, token,id_user,instance['id_group'])
+                    return
+
+                elif result['operacao'] == ">" and current_note > grade:
+                    addUserToGroup(url_moodle, token,id_user,instance['id_group'])
+                    return
+
+                elif result['operacao'] == "<" and current_note < grade:
+                    addUserToGroup(url_moodle, token,id_user,instance['id_group'])
+                    return
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
+        return 400
 
 def getInstance(db, target_activity, url_moodle, id_course ):
     instance = []
