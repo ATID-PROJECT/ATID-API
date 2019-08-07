@@ -8,6 +8,11 @@ start_controller = Blueprint('start_controller', __name__, template_folder='temp
 
 from .questions import *
 
+from urllib.parse import urlparse
+import sys
 @start_controller.route('/')
 def index(db: Graph):
+    o = request.remote_addr
+    host = o
+    print(host+"...", file=sys.stderr)
     return "API ATID"

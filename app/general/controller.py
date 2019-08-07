@@ -34,6 +34,11 @@ import requests
 source_moodle = "https://good-firefox-42.localtunnel.me"
 url_moodle = "webservice/rest/server.php?wstoken={0}&wsfunction={1}&moodlewsrestformat=json"
 
+def getUrl( complet_url ):
+    url_parts = parse.urlparse( complet_url )
+    return f"{url_parts.scheme}://{url_parts.netloc}"
+
+
 def getCurrentDate():
     return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -42,7 +47,7 @@ def TimestampMillisec64():
 
 def saveConnection( db, network_id, current_user, url, token ):
     query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(net:Network{{id:'{network_id}'}}) \
-            SET net.url = '{url}',\
+            SET net.url = '{getUrl(url)}',\
                 net.token = '{token}'\
                 return net"
  
@@ -248,15 +253,27 @@ def makeCourse(db: Graph):
     
     return jsonify({"message": "curso criado com sucesso", "status": 200}), 200
 
+def isDiffAddress(url_1, url_2):
+    url1 = parse.urlparse(url_1)
+    url2 = parse.urlparse(url_2)
+
+    if url1.netloc != url2.netloc:
+        return True
+
+    return False
+
 @account_controller.route('/moodle/events/quiz/', methods=['GET','POST','PUT'])
 def eventQuiz(db: Graph):
     if request.method == "PUT":
 
-        print(request.form, file=sys.stderr)
+        
         id_quiz = request.form['id_quiz']
         id_user = request.form['id_user']
         id_course = request.form['id_course']
         url_item = request.form['url_item']
+
+        if isDiffAddress(url_item, request.request.remote_addr):
+            abort(404)
 
         try:
             userCompletQuiz(db, id_course, id_quiz, id_user, url_item)
@@ -340,11 +357,9 @@ def moodleTest(db: Graph):
         if 'exception' in data:
             return jsonify({"message": "`url` e `token` inválidos.", "status": 400}), 400
 
-
         saveConnection( db, network_id, current_user, url_base, token)
         return jsonify({"message": "`url` e `token` são obrigatórios.", "status": 200}), 200
 
-    
     return jsonify({"message": "`url` e `token` são obrigatórios.", "status": 400}), 400
 
 @account_controller.route('/moodle/get', methods=['GET'])
