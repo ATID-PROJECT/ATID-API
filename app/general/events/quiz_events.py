@@ -6,12 +6,14 @@ from dynaconf import settings
 
 from .util import *
 
+url_moodle = "webservice/rest/server.php?wstoken={0}&wsfunction={1}&moodlewsrestformat=json"
+
 def userHasGroup(url_base, token, userid, groupid):
     function = "core_group_get_group_members"
     
     params = f"&groupids[0]={groupid}"
     
-    final_url = str( url_base + "/" +(settings.url_moodle.format(token, function+params)))
+    final_url = str( url_base + "/" +(url_moodle.format(token, function+params)))
 
     r = requests.post( final_url, data={})
     result = r.json()
@@ -27,7 +29,7 @@ def getBestNote(url_base, token, userid, quizid):
     
     params = f"&userid={userid}&quizid={quizid}"
 
-    final_url = str( url_base + "/" +(settings.url_moodle.format(token, function+params)))
+    final_url = str( url_base + "/" +(url_moodle.format(token, function+params)))
     
     r = requests.post( final_url, data={})
     result = r.json()
