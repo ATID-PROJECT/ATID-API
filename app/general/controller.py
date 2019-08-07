@@ -257,7 +257,7 @@ def isDiffAddress(url_1, url_2):
     url1 = parse.urlparse(url_1)
     url2 = parse.urlparse(url_2)
 
-    if url1.netloc != url2.netloc:
+    if url1.netloc != url2.netloc and len(url2.netloc) > 0:
         return True
 
     return False
@@ -266,15 +266,15 @@ def isDiffAddress(url_1, url_2):
 def eventQuiz(db: Graph):
     if request.method == "PUT":
 
-        
         id_quiz = request.form['id_quiz']
         id_user = request.form['id_user']
         id_course = request.form['id_course']
         url_item = request.form['url_item']
 
-        if isDiffAddress(url_item, request.request.remote_addr):
+        
+        if isDiffAddress( url_item, request.remote_addr):
             abort(404)
-
+        
         try:
             userCompletQuiz(db, id_course, id_quiz, id_user, url_item)
             return "ok"
