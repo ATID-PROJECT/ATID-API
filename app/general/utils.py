@@ -2,15 +2,12 @@
 
 url_moodle = "webservice/rest/server.php?wstoken={0}&wsfunction={1}&moodlewsrestformat=json"
 
-def createAssign(token, course_id, name, description, wikimode, firstpagetitle, defaultformat):
+def createAssign(token, course_id, name, description):
     function = "local_wstemplate_handle_assign"
     
     params = f"&name={name}\
             &description={description}\
             &course_id={course_id}\
-            &wikimode={wikimode}\
-            &firstpagetitle={firstpagetitle}\
-            &defaultformat={defaultformat}\
         "
 
     final_url = str( url_base + "/" +(url_moodle.format(token, function+params)))

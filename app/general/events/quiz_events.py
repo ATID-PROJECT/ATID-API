@@ -91,10 +91,10 @@ def userCompletQuiz(db, id_course, id_quiz, id_user, url_moodle):
             if len(result) == 0:
                 return
 
-            result = json.loads( result[0]['cond']['data'] )['default']
+            result = json.loads( result[0]['cond'][','] )['default']
 
             print("=====++++====", file=sys.stderr)
-            print(result, file=sys.stderr)
+            print(json.loads( result[0]['cond'][','] ), file=sys.stderr)
 
             if result['propriedade'].lower() == "number;Nota recebida".lower() and best_grade['hasgrade']:
                 

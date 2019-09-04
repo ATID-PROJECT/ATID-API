@@ -100,21 +100,7 @@ class ExternToolResource(Resource):
             externtool = ExternTool()
             externtool.uuid = uuid
             externtool.name = dataDict["name"]
-
             externtool.description = dataDict["description"]
-            externtool.show_description_course = dataDict["show_description_course"]
-            externtool.show_activity = dataDict["show_activity"]
-            externtool.show_description_activity = dataDict["show_description_activity"]
-
-            externtool.pre_config_url = dataDict["pre_config_url"]
-            externtool.url_tool = dataDict["url_tool"]
-            externtool.url_tool_ssl = dataDict["url_tool_ssl"]
-
-
-            externtool.pre_config = dataDict["pre_config"]
-            externtool.key_consumer = dataDict["key_consumer"]
-            externtool.key_secret = dataDict["key_secret"]
-            externtool.custom_params = dataDict["custom_params"]
 
             self.db.push(externtool)
 
@@ -123,8 +109,6 @@ class ExternToolResource(Resource):
         except Exception as e:
             print("ERRO:",file=sys.stderr)
             print(str(e), file=sys.stderr)
-
-
         
         return jsonify({"sucess": True})
 
@@ -138,32 +122,10 @@ class ExternToolResource(Resource):
 
         name = dataDict["name"]
         description = dataDict["description"]
-        show_description_course = dataDict["show_description_course"]
-        show_activity = dataDict["show_activity"]
-        show_description_activity = dataDict["show_description_activity"]
-
-        pre_config_url = dataDict["pre_config_url"]
-        url_tool = dataDict["url_tool"]
-        url_tool_ssl = dataDict["url_tool_ssl"]
-
-        pre_config = dataDict["pre_config"]
-        key_consumer = dataDict["key_consumer"]
-        key_secret = dataDict["key_secret"]
-        custom_params = dataDict["custom_params"]
 
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(externtool:ExternTool{{uuid:'{uuid}'}}) \
             SET externtool.name = '{name}',\
-            externtool.description = '{description}',\
-            externtool.show_description_course = '{show_description_course}',\
-            externtool.show_activity = '{show_activity}',\
-            externtool.show_description_activity = '{show_description_activity}',\
-            externtool.pre_config_url = '{pre_config_url}',\
-            externtool.url_tool = '{url_tool}',\
-            externtool.url_tool_ssl = '{url_tool_ssl}',\
-            externtool.pre_config = '{pre_config}',\
-            externtool.key_consumer = '{key_consumer}',\
-            externtool.key_secret = '{key_secret}',\
-            externtool.custom_params = '{custom_params}'\
+            externtool.description = '{description}'\
                  return externtool"
         
         self.db.run(query).data()
@@ -178,10 +140,8 @@ class ExternToolResource(Resource):
         #atualizar todas 'turmas' já criadas
         for instance in all_instances:
             result = instance['instance']
-            updateExterntool(network['url'], network['token'], result['id_instance'], name, description, show_description_course, show_activity, show_description_activity,
-                pre_config_url, url_tool, url_tool_ssl, pre_config, key_consumer, key_secret, custom_params)
+            updateExterntool(network['url'], network['token'], result['id_instance'], name, description)
         
-
         return jsonify({"updated": True})
 
     @jwt_required
@@ -222,12 +182,6 @@ class ForumResource(Resource):
             forum.uuid = uuid
             forum.name = dataDict["name"]
             forum.description = dataDict["description"]
-            forum.type_forum = dataDict["type_forum"]
-            forum.maxbytes = dataDict["maxbytes"]
-            forum.maxattachments = dataDict["maxattachments"]
-            forum.displaywordcount = dataDict["displaywordcount"]
-            forum.forcesubscribe = dataDict["forcesubscribe"]
-            forum.trackingtype = dataDict["trackingtype"]
         
             self.db.push(forum)
 
@@ -245,26 +199,13 @@ class ForumResource(Resource):
         network_id = dataDict["network_id"]
         uuid = dataDict["uuid"]
 
-        print( str(dataDict["displaywordcount"]), file=sys.stderr)
         name = dataDict["name"]
         description = dataDict["description"]
-        type_forum = dataDict["type_forum"]
-        maxbytes = dataDict["maxbytes"]
-        maxattachments = dataDict["maxattachments"]
-        displaywordcount = dataDict["displaywordcount"]
-        forcesubscribe = dataDict["forcesubscribe"]
-        trackingtype = dataDict["trackingtype"]
 
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(forum:Forum{{uuid:'{uuid}'}}) \
             SET forum.name = '{name}',\
-            forum.description = '{description}',\
-            forum.type_forum = '{type_forum}',\
-            forum.maxbytes = '{maxbytes}',\
-            forum.maxattachments = '{maxattachments}',\
-            forum.displaywordcount = '{displaywordcount}',\
-            forum.forcesubscribe = '{forcesubscribe}',\
-            forum.trackingtype = '{trackingtype}'\
-                 return forum"
+            forum.description = '{description}'\
+                return forum"
 
         self.db.run(query).data()
 
@@ -278,9 +219,7 @@ class ForumResource(Resource):
         #atualizar todas 'turmas' já criadas
         for instance in all_instances:
             result = instance['instance']
-            updateForum(network['url'], network['token'], result['id_instance'], name, description, type_forum, maxbytes, 
-                maxattachments, displaywordcount, forcesubscribe, trackingtype)
-        
+            updateForum(network['url'], network['token'], result['id_instance'], name, description)
 
         return jsonify({"updated": True})
 
@@ -321,19 +260,6 @@ class GlossarioResource(Resource):
         glossario.uuid = uuid
         glossario.name = dataDict["name"]
         glossario.description = dataDict["description"]
-        glossario.type_glossario = dataDict["type_glossario"]
-        glossario.allow_new_item = dataDict["allow_new_item"]
-        glossario.allow_edit = dataDict["allow_edit"]
-        glossario.allow_repeat_item = dataDict["allow_repeat_item"]
-        glossario.allow_comments = dataDict["allow_comments"]
-        glossario.allow_automatic_links = dataDict["allow_automatic_links"]
-        glossario.type_view = dataDict["type_view"]
-        glossario.type_view_approved = dataDict["type_view_approved"]
-        glossario.num_items_by_page = dataDict["num_items_by_page"]
-        glossario.show_alphabet = dataDict["show_alphabet"]
-        glossario.show_todos = dataDict["show_todos"]
-        glossario.show_special = dataDict["show_special"]
-        glossario.allow_print = dataDict["allow_print"]
 
         self.db.push(glossario)
 
@@ -349,37 +275,11 @@ class GlossarioResource(Resource):
 
         name = dataDict["name"]
         description = dataDict["description"]
-        type_glossario = dataDict["type_glossario"]
-        allow_new_item = dataDict["allow_new_item"]
-        allow_edit = dataDict["allow_edit"]
-        allow_repeat_item = dataDict["allow_repeat_item"]
-        allow_comments = dataDict["allow_comments"]
-        allow_automatic_links = dataDict["allow_automatic_links"]
-        type_view = dataDict["type_view"]
-        type_view_approved = dataDict["type_view_approved"]
-        num_items_by_page = dataDict["num_items_by_page"]
-        show_alphabet = dataDict["show_alphabet"]
-        show_todos = dataDict["show_todos"]
-        show_special = dataDict["show_special"]
-        allow_print = dataDict["allow_print"]
 
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(glossario:Glossario{{uuid:'{uuid}'}}) \
             SET glossario.name = '{name}',\
-            glossario.description = '{description}',\
-            glossario.type_glossario = '{type_glossario}',\
-            glossario.allow_new_item = '{allow_new_item}',\
-            glossario.allow_edit = '{allow_edit}',\
-            glossario.allow_repeat_item = '{allow_repeat_item}',\
-            glossario.allow_comments = '{allow_comments}',\
-            glossario.allow_automatic_links = '{allow_automatic_links}',\
-            glossario.type_view = '{type_view}',\
-            glossario.type_view_approved = '{type_view_approved}',\
-            glossario.num_items_by_page = '{num_items_by_page}',\
-            glossario.show_alphabet = '{show_alphabet}',\
-            glossario.show_todos = '{show_todos}',\
-            glossario.show_special = '{show_special}',\
-            glossario.allow_print = '{allow_print}'\
-                 return glossario"
+            glossario.description = '{description}'\
+                return glossario"
 
         self.db.run(query).data()
 
@@ -393,9 +293,7 @@ class GlossarioResource(Resource):
         #atualizar todas 'turmas' já criadas
         for instance in all_instances:
             result = instance['instance']
-            updateGlossario(network['url'], network['token'], result['id_instance'], name, description, type_glossario, allow_new_item, allow_edit,
-                allow_repeat_item,allow_comments,allow_automatic_links,type_view,type_view_approved,num_items_by_page,
-                show_alphabet,show_todos,show_special,allow_print)
+            updateGlossario(network['url'], network['token'], result['id_instance'], name, description)
 
         return jsonify({"updated": True})
 
@@ -1004,9 +902,6 @@ class WikiResource(Resource):
         wiki.uuid = uuid
         wiki.name = dataDict["name"]
         wiki.description = dataDict["description"]
-        wiki.wikimode = dataDict["wikimode"]
-        wiki.firstpagetitle = dataDict["firstpagetitle"]
-        wiki.defaultformat = dataDict["defaultformat"]
 
         self.db.push(wiki)
 
@@ -1022,16 +917,10 @@ class WikiResource(Resource):
 
         name = dataDict["name"]
         description = dataDict["description"]
-        wikimode = dataDict["wikimode"]
-        firstpagetitle = dataDict["firstpagetitle"]
-        defaultformat = dataDict["defaultformat"]
 
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(wiki:Wiki{{uuid:'{uuid}'}}) \
             SET wiki.name = '{name}',\
-            wiki.description = '{description}',\
-            wiki.wikimode = '{wikimode}',\
-            wiki.firstpagetitle = '{firstpagetitle}',\
-            wiki.defaultformat = '{defaultformat}'\
+            wiki.description = '{description}'\
             return wiki"
 
         self.db.run(query).data()
@@ -1046,7 +935,7 @@ class WikiResource(Resource):
         #atualizar todas 'turmas' já criadas
         for instance in all_instances:
             result = instance['instance']
-            updateWiki(network['url'], network['token'], result['id_instance'], name, description, wikimode, firstpagetitle, defaultformat)
+            updateWiki(network['url'], network['token'], result['id_instance'], name, description)
 
         return jsonify({"updated": True})
 
@@ -1189,7 +1078,7 @@ class DatabaseResource(Resource):
         database.name = dataDict["name"]
         database.description = dataDict["description"]
 
-        database.approval_required = dataDict["approval_required"]
+        """database.approval_required = dataDict["approval_required"]
         database.allow_edit_approval_entries = dataDict["allow_edit_approval_entries"]
         database.allow_comment = dataDict["allow_comment"]
         database.required_before_viewing = dataDict["required_before_viewing"]
@@ -1202,7 +1091,7 @@ class DatabaseResource(Resource):
         database.allow_read_only_end = dataDict["allow_read_only_end"]
         database.allow_read_only = dataDict["allow_read_only"]
         database.allow_open_date = dataDict["allow_open_date"]
-        database.allow_end_date = dataDict["allow_end_date"]
+        database.allow_end_date = dataDict["allow_end_date"]"""
 
         self.db.push(database)
 
@@ -1219,43 +1108,21 @@ class DatabaseResource(Resource):
 
         name = dataDict["name"]
         description = dataDict["description"]
-
-        approval_required = dataDict["approval_required"]
-        allow_edit_approval_entries = dataDict["allow_edit_approval_entries"]
-        allow_comment = dataDict["allow_comment"]
-        required_before_viewing = dataDict["required_before_viewing"]
-        max_entries = dataDict["max_entries"]
-
-        open_date = dataDict["open_date"]
-        end_date = dataDict["end_date"]
-        read_only = dataDict["read_only"]
-        read_only_end = dataDict["read_only_end"]
-        allow_read_only_end = dataDict["allow_read_only_end"]
-        allow_read_only = dataDict["allow_read_only"]
-        allow_open_date = dataDict["allow_open_date"]
-        allow_end_date = dataDict["allow_end_date"]
-
-        set_query = f""
-
+        
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(database:Database{{uuid:'{uuid}'}}) \
             SET database.name = '{name}',\
-            database.description = '{description}',\
-            database.approval_required = '{approval_required}',\
-            database.allow_edit_approval_entries = '{allow_edit_approval_entries}',\
-            database.allow_comment = '{allow_comment}',\
-            database.required_before_viewing = '{required_before_viewing}',\
-            database.max_entries = '{max_entries}',\
-            database.open_date = '{open_date}',\
-            database.end_date = '{end_date}',\
-            database.read_only = '{read_only}',\
-            database.read_only_end = '{read_only_end}',\
-            database.allow_read_only_end = '{allow_read_only_end}',\
-            database.allow_read_only = '{allow_read_only}',\
-            database.allow_open_date = '{allow_open_date}',\
-            database.allow_end_date = '{allow_end_date}'\
+            database.description = '{description}'\
              return database"
 
         self.db.run(query).data()
+        
+        try:
+            self.db.run(query).data()
+        except Exception as e:
+            print("aaaaaaaaaaaaaaa", file=sys.stderr)
+            print(str(e), file=sys.stderr)
+
+        print("aaaaaaaaaaaaaaa", file=sys.stderr)
 
         database = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(database:Database{uuid:'%s'}) return database" % (current_user, network_id, uuid)).data()        
         network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
@@ -1267,8 +1134,7 @@ class DatabaseResource(Resource):
         #atualizar todas 'turmas' já criadas
         for instance in all_instances:
             result = instance['instance']
-            updateDatabase(network['url'], network['token'], result['id_instance'], name, description, approval_required, allow_edit_approval_entries, allow_comment, 
-                required_before_viewing, max_entries, open_date, end_date, read_only, read_only_end)
+            updateDatabase(network['url'], network['token'], result['id_instance'], name, description)
 
         return jsonify({"updated": True})
 
@@ -1309,11 +1175,6 @@ class ChoiceResource(Resource):
         choice.uuid = uuid
         choice.name = dataDict["name"]
         choice.description = dataDict["description"]
-        choice.allow_choice_update = dataDict["allow_choice_update"]
-        choice.allow_multiple_choices = dataDict["allow_multiple_choices"]
-        choice.allow_limit_answers = dataDict["allow_limit_answers"]
-        
-        choice.choice_questions = dataDict["choice_questions"]
 
         self.db.push(choice)
 
@@ -1329,18 +1190,10 @@ class ChoiceResource(Resource):
 
         name = dataDict["name"]
         description = dataDict["description"]
-        allow_choice_update = dataDict["allow_choice_update"]
-        allow_multiple_choices = dataDict["allow_multiple_choices"]
-        allow_limit_answers = dataDict["allow_limit_answers"]
-        choice_questions = dataDict["choice_questions"]
 
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(choice:Choice{{uuid:'{uuid}'}}) \
             SET choice.name = '{name}',\
-            choice.description = '{description}',\
-            choice.allow_choice_update = '{allow_choice_update}',\
-            choice.allow_multiple_choices = '{allow_multiple_choices}',\
-            choice.allow_limit_answers = '{allow_limit_answers}',\
-            choice.choice_questions = {choice_questions}\
+            choice.description = '{description}'\
             return choice"
 
         self.db.run(query).data()

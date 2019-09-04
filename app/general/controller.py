@@ -116,8 +116,7 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
     elif label == "database":
         group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
 
-        data = createDatabase( url_base, token, course_id, item['name'], item['description'], item['approval_required'], item['allow_edit_approval_entries'], item['allow_comment'], 
-        item['required_before_viewing'], item['max_entries'], item['open_date'], item['end_date'], item['read_only'], item['read_only_end'], group['id'])
+        data = createDatabase( url_base, token, course_id, item['name'], item['description'] )
         data_instance = DatabaseInstance()
         data_instance.uuid = generateUUID()
         data_instance.id_database = item['uuid']
@@ -130,8 +129,7 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
 
     elif label == "forum":
         group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
-        forum = createForum( url_base, token, course_id, item['name'], item['description'], item['type_forum'], item['maxbytes'], item['maxattachments'], \
-            item['displaywordcount'], item['forcesubscribe'], item['trackingtype'], group['id'] )
+        forum = createForum( url_base, token, course_id, item['name'], item['description'] )
 
         forum_instance = ForumInstance()
         forum_instance.uuid = generateUUID()
@@ -144,8 +142,7 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
 
     elif label == "externtool":
         group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
-        lti = createExterntool( url_base, token, course_id, item['name'], item['description'], item['show_description_course'], item['show_activity'], item['show_description_activity'],
-        item['pre_config_url'], item['url_tool'], item['url_tool_ssl'], item['pre_config'], item['key_consumer'], item['key_secret'], item['custom_params'], group['id'] )
+        lti = createExterntool( url_base, token, course_id, item['name'], item['description'])
     
         lti_instance = ExternToolInstance()
         lti_instance.uuid = generateUUID()
@@ -162,9 +159,7 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
     elif label == "glossario":
         group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
 
-        glossario = createGlossario( url_base, token, course_id, item['name'], item['description'], item['type_glossario'], item['allow_new_item'], item['allow_edit'],
-        item['allow_repeat_item'],item['allow_comments'],item['allow_automatic_links'],item['type_view'],item['type_view_approved'],item['num_items_by_page'],
-        item['show_alphabet'],item['show_todos'],item['show_special'],item['allow_print'], group['id'] )
+        glossario = createGlossario( url_base, token, course_id, item['name'], item['description'] )
         
         glossario_instance = GlossarioInstance()
         glossario_instance.uuid = generateUUID()
@@ -180,8 +175,7 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
 
     elif label == "wiki":
         group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
-        wiki = createWiki( url_base, token, course_id, item['name'], item['description'], item['wikimode'],\
-             item['firstpagetitle'], item['defaultformat'], group['id'])
+        wiki = createWiki( url_base, token, course_id, item['name'], item['description'])
  
         wiki_instance = WikiInstance()
         wiki_instance.uuid = generateUUID()
@@ -195,8 +189,7 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
 
     elif label == "choice":
         group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
-        choice = createChoice( url_base, token, course_id, item['name'], item['description'], item['allow_choice_update'],item['allow_multiple_choices'],
-        item['allow_limit_answers'], item['choice_questions'], group['id'])
+        choice = createChoice( url_base, token, course_id, item['name'], item['description'] )
 
         choice_instance = ChoiceInstance()
         choice_instance.uuid = generateUUID()
@@ -210,7 +203,7 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
 
     elif label == "quiz":
         group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
-        quiz = createQuiz( url_base, token, course_id, item['name'], item['description'], item['open_date'], item['end_date'], group['id'])
+        quiz = createQuiz( url_base, token, course_id, item['name'], item['description'] )
 
         quiz_instance = QuizInstance()
         quiz_instance.uuid = generateUUID()
@@ -221,10 +214,9 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
         db.push( quiz_instance )
 
         Course.addQuiz(db, current_user, course_id, quiz_instance.uuid)
-        
 
-    elif label == "assign":
-        return createAssign(token, course_id, item['name'], item['description'], item['wikimode'], item['firstpagetitle'], item['defaultformat'])
+    #elif label == "assign":
+        #return createAssign(token, course_id, item['name'], item['description'] )
 
 
 @account_controller.route('/moodle/new_course', methods=['POST'])
@@ -277,6 +269,7 @@ def eventQuiz(db: Graph):
         
         try:
             userCompletQuiz(db, id_course, id_quiz, id_user, url_item)
+            print('.......................................')
             return "ok"
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -458,7 +451,9 @@ def getall_Network(db: Graph):
     current_user = get_jwt_identity()
     page = int(request.args.get("page"))-1
     size = int(request.args.get("page_size"))
-    result = Network.fetch_all_by_user(db, current_user, size*page, size)
+    code = request.args.get("code")
+    name = request.args.get("name")
+    result = Network.fetch_all_by_user(db, current_user, size*page, size, code, name)
 
     return jsonify(result)
 
