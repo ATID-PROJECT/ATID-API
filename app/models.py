@@ -508,4 +508,4 @@ class Network(BaseModel):
         return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Network{id:'%s'}) set activity.name='%s',activity.updated_at='%s'" % (user, id, new_name, updated_at)).data()
 
     def fetch_all_by_user(graph, email, offset, limit, code, name):
-        return graph.run( f"Match (p:User{email:'{email}'})-[r]-(activity:Network) where activity.id =~ '.*{code}.*' and activity.name =~ '.*{name}.*' return activity SKIP {offset} LIMIT {limit}").data()
+        return graph.run( f"Match (p:User{{email:'{email}'}})-[r]-(activity:Network) where activity.id =~ '.*{code}.*' and activity.name =~ '.*{name}.*' return activity SKIP {offset} LIMIT {limit}").data()
