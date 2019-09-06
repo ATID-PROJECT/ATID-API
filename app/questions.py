@@ -726,15 +726,6 @@ class QuizResource(Resource):
         quiz.uuid = uuid
         quiz.name = dataDict["name"]
         quiz.description = dataDict["description"]
-        quiz.time_limit = dataDict["time_limit"]
-        quiz.time_type  = dataDict["time_type"]
-        quiz.open_date = dataDict["open_date"]
-        quiz.end_date  = dataDict["end_date"]
-        quiz.new_page = dataDict["new_page"]
-        quiz.shuffle = dataDict["shuffle"]
-        quiz.allow_time_limit = dataDict["allow_time_limit"]
-        quiz.allow_open_date = dataDict["allow_open_date"]
-        quiz.allow_end_date = dataDict["allow_end_date"]
 
         self.db.push(quiz)
 
@@ -750,30 +741,13 @@ class QuizResource(Resource):
 
         name = dataDict["name"]
         description = dataDict["description"]
-        time_limit = dataDict["time_limit"]
-        time_type  = dataDict["time_type"]
-        open_date = dataDict["open_date"]
-        end_date  = dataDict["end_date"]
-        new_page = dataDict["new_page"]
-        shuffle = dataDict["shuffle"]
-        allow_time_limit = dataDict["allow_time_limit"]
-        allow_open_date = dataDict["allow_open_date"]
-        allow_end_date = dataDict["allow_end_date"]
 
         set_query = f""
 
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(quiz:Quiz{{uuid:'{uuid}'}}) \
              SET quiz.name = '{name}',\
-            quiz.description = '{description}',\
-            quiz.time_limit = '{time_limit}',\
-            quiz.time_type  = '{time_type}',\
-            quiz.open_date = '{open_date}',\
-            quiz.end_date  = '{end_date}',\
-            quiz.new_page = '{new_page}',\
-            quiz.allow_time_limit = '{allow_time_limit}',\
-            quiz.allow_open_date = '{allow_open_date}',\
-            quiz.allow_end_date = '{allow_end_date}',\
-            quiz.shuffle = '{shuffle}' return quiz"
+             quiz.description = '{description}'\
+             return quiz"
 
         self.db.run(query).data()
 
