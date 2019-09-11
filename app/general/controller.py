@@ -311,27 +311,24 @@ def updateQuestion(db: Graph):
 
     return ""
 
-@account_controller.route('/moodle/students/')
+@account_controller.route('/moodle/students/') 
 @jwt_required
 def getStudents(db: Graph):
-    function = "core_enrol_get_enrolled_users"
+    function = " core_group_get_group_members "
     current_user = get_jwt_identity()
-    course_id = request.args.get("id")
-    result = db.run("MATCH (p:User{email:'%s'})-[r1]-(net:Network)-[r2]-(course:Course{id:%s}) return net" % (current_user, course_id)).data()[0]['net']
 
-    print(str( result["url"] + "/" +(url_moodle.format( result["token"] , function+"&courseid="+course_id ))), file=sys.stderr)
-    with urllib.request.urlopen(str( result["url"] + "/" +(url_moodle.format( result["token"] , function))+"&courseid="+course_id )) as url:
+    network_id = request.args.get("network_id")
+    activity_id = request.args.get("group_id")
+
+    result = db.run(f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(net:Network{{id:'{network_id}'}}) return net").data()[0]['net']
+
+    with urllib.request.urlopen(str( result["url"] + "/" +(url_moodle.format( result["token"] , function))+"&groupids[0]="+group_id )) as url:
         data = json.loads(url.read().decode())
         
         if 'exception' in data:
             return jsonify({"message": "`url` e `token` inválidos.", "status": 400}), 400
         
-        result_users = []
-        
-        for user in data:
-            result_users.append( {'username': user['username'], 'email': user['email'],'profileimageurl': user['profileimageurl']} )
-        
-        return jsonify( result_users )
+        print(data, file=sys.stderr)
     
     return jsonify({"message": "`id` é obrigatório.", "status": 400}), 400
 
