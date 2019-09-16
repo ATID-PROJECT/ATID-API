@@ -13,10 +13,10 @@ def getQuiz( url_base, token, course_id, quiz_id ):
 
     return result
 
-def createQuiz(url_base, token, course_id, name, description, timeopen, timeclose, group_id):
+def createQuiz(url_base, token, course_id, name, description):
     
     function = "local_wstemplate_handle_quiz"
-    params = f"&course_id={course_id}&name={name}&description={description}&timeopen={timeopen}&timeclose={timeclose}&group_id={group_id}"
+    params = f"&course_id={course_id}&name={name}&description={description}"
     final_url = str( url_base + "/" +(settings.URL_MOODLE.format(token, function+params)))
     
     r = requests.post( final_url, data={} )
@@ -25,10 +25,10 @@ def createQuiz(url_base, token, course_id, name, description, timeopen, timeclos
 
     return result
 
-def updateQuiz(url_base, token, quiz_id, name, description, timeopen, timeclose):
+def updateQuiz(url_base, token, quiz_id, name, description):
     
     function = "update_quiz"
-    params = f"&quiz_id={quiz_id}&name={name}&description={description}&timeopen={timeopen}&timeclose={timeclose}"
+    params = f"&quiz_id={quiz_id}&name={name}&description={description}"
     final_url = str( url_base + "/" +(settings.URL_MOODLE.format(token, function+params)))
     
     r = requests.post( final_url, data={} )
