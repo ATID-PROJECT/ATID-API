@@ -311,29 +311,63 @@ def updateQuestion(db: Graph):
 
     return ""
 
-@account_controller.route('/moodle/students/')
+def get_user( url, token, id ):
+    function = "core_user_get_users_by_field"
+
+    with urllib.request.urlopen(\
+        f"{url}/{url_moodle.format( token, function)}&field=id&values[0]={id}" ) as url:
+        data = json.loads(url.read().decode())
+
+        if 'exception' in data:
+            return None
+
+        return {
+            'username': data[0]['username'],
+            'firstname': data[0]['firstname'],
+            'fullname': data[0]['fullname'],
+            'email': data[0]['email'],
+            'profileimageurl': data[0]['profileimageurl'],
+        }
+
+@account_controller.route('/moodle/students/') 
 @jwt_required
 def getStudents(db: Graph):
-    function = "core_enrol_get_enrolled_users"
+    function = "core_group_get_group_members"
     current_user = get_jwt_identity()
-    course_id = request.args.get("id")
-    result = db.run("MATCH (p:User{email:'%s'})-[r1]-(net:Network)-[r2]-(course:Course{id:%s}) return net" % (current_user, course_id)).data()[0]['net']
+    all_users = []
 
-    print(str( result["url"] + "/" +(url_moodle.format( result["token"] , function+"&courseid="+course_id ))), file=sys.stderr)
-    with urllib.request.urlopen(str( result["url"] + "/" +(url_moodle.format( result["token"] , function))+"&courseid="+course_id )) as url:
+    network_id = request.args.get("network_id")
+    activity_id = request.args.get("activity_id")
+    activity_type = request.args.get("activity_type")
+    course_id = request.args.get("course_id")
+
+    type_lower = activity_type.lower()
+    type_capitalize = activity_type.capitalize()
+
+    result = db.run(f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(net:Network{{id:'{network_id}'}}) return net").data()
+    activity = db.run(f"MATCH (course:Course{{id:{course_id}}})-[r1]-(activity:{type_capitalize}Instance{{id_{type_lower}:'{activity_id}'}}) return activity").data()
+    
+    if len(activity)==0 or len(result)==0:
+        return jsonify({"message": "", "status": 400}), 400
+    else:
+        result = result[0]['net']
+        activity = activity[0]['activity']
+
+    with urllib.request.urlopen(\
+        f"{result['url']}/{url_moodle.format( result['token'] , function)}&groupids[0]={activity['id_group']}" ) as url:
         data = json.loads(url.read().decode())
         
         if 'exception' in data:
             return jsonify({"message": "`url` e `token` inválidos.", "status": 400}), 400
         
-        result_users = []
-        
-        for user in data:
-            result_users.append( {'username': user['username'], 'email': user['email'],'profileimageurl': user['profileimageurl']} )
-        
-        return jsonify( result_users )
+        for user_id in data[0]['userids']:
+            print(user_id, file=sys.stderr)
+            user = get_user(result['url'],result['token'], user_id)
+            if user:
+                all_users.append( user )
     
-    return jsonify({"message": "`id` é obrigatório.", "status": 400}), 400
+    print(all_users, file=sys.stderr)
+    return jsonify(all_users), 200
 
 @account_controller.route('/moodle/test', methods=['GET'])
 @jwt_required
