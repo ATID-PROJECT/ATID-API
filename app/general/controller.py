@@ -116,7 +116,7 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
     elif label == "database":
         group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
 
-        data = createDatabase( url_base, token, course_id, item['name'], item['description'] )
+        data = createDatabase( url_base, token, course_id, item['name'], item['description'], group['id'] )
         data_instance = DatabaseInstance()
         data_instance.uuid = generateUUID()
         data_instance.id_database = item['uuid']
@@ -129,7 +129,7 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
 
     elif label == "forum":
         group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
-        forum = createForum( url_base, token, course_id, item['name'], item['description'] )
+        forum = createForum( url_base, token, course_id, item['name'], item['description'], group['id'] )
 
         forum_instance = ForumInstance()
         forum_instance.uuid = generateUUID()
@@ -142,7 +142,7 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
 
     elif label == "externtool":
         group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
-        lti = createExterntool( url_base, token, course_id, item['name'], item['description'])
+        lti = createExterntool( url_base, token, course_id, item['name'], item['description'], group['id'])
     
         lti_instance = ExternToolInstance()
         lti_instance.uuid = generateUUID()
@@ -159,7 +159,7 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
     elif label == "glossario":
         group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
 
-        glossario = createGlossario( url_base, token, course_id, item['name'], item['description'] )
+        glossario = createGlossario( url_base, token, course_id, item['name'], item['description'], group['id'] )
         
         glossario_instance = GlossarioInstance()
         glossario_instance.uuid = generateUUID()
@@ -175,7 +175,7 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
 
     elif label == "wiki":
         group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
-        wiki = createWiki( url_base, token, course_id, item['name'], item['description'])
+        wiki = createWiki( url_base, token, course_id, item['name'], item['description'], group['id'])
  
         wiki_instance = WikiInstance()
         wiki_instance.uuid = generateUUID()
@@ -189,7 +189,7 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
 
     elif label == "choice":
         group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
-        choice = createChoice( url_base, token, course_id, item['name'], item['description'] )
+        choice = createChoice( url_base, token, course_id, item['name'], item['description'], group['id'] )
 
         choice_instance = ChoiceInstance()
         choice_instance.uuid = generateUUID()
@@ -203,7 +203,7 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
 
     elif label == "quiz":
         group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
-        quiz = createQuiz( url_base, token, course_id, item['name'], item['description'] )
+        quiz = createQuiz( url_base, token, course_id, item['name'], item['description'], group['id'] )
 
         quiz_instance = QuizInstance()
         quiz_instance.uuid = generateUUID()
@@ -211,6 +211,8 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
         quiz_instance.id_group = group['id']
         quiz_instance.id_instance = quiz['id']
         
+        print( item , file=sys.stderr)
+        print(",,,,,,,,,,,,,,,,,,,,,,,,", file=sys.stderr)
         db.push( quiz_instance )
 
         Course.addQuiz(db, current_user, course_id, quiz_instance.uuid)
@@ -378,7 +380,7 @@ def moodleTest(db: Graph):
     url_base = request.args.get("url")
     network_id = request.args.get("network_id")
     token = request.args.get("token")
-
+    print(str( url_base + "/" +(url_moodle.format(token, function))), file=sys.stderr)
     with urllib.request.urlopen(str( url_base + "/" +(url_moodle.format(token, function)))) as url:
         data = json.loads(url.read().decode())
         if 'exception' in data:
