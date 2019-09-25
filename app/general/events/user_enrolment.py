@@ -23,10 +23,9 @@ def UserToStart(db, url_host, id_course, id_user):
                 
                 if not('suggestion_uuid' in target_item):
                     abort(400, {'message': 'A rede possuí erros estruturais.'})
-
                 
                 target_uuid = target_item['suggestion_uuid']
-                
+                print(f"MATCH (network:Network{{url:'{url_host}'}})-[:HAS_QUESTIONS]->(target{{uuid:'{target_uuid}'}}) return target", file=sys.stderr)
                 target_activity = db.run(f"MATCH (network:Network{{url:'{url_host}'}})-[:HAS_QUESTIONS]->(target{{uuid:'{target_uuid}'}}) return target").data()[0]['target']
                 id_group = getInstanceOfActivityUUID(db, url_host, id_course, target_uuid, target_activity['label'])[0]["instance"]["id_group"]
                 

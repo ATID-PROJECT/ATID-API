@@ -26,6 +26,8 @@ def getNextActivity(db, url_host, id_course, current_id):
     return [target_transictions,target_activitys]
 
 def getInstanceOfActivityUUID(db, url_base, id_course, uuid_activity, type_activity):
+    print(f"MATCH (a:Network{{url:'{url_base}'}})-[r2]-(c:Course{{id:{id_course}}})-[r3]-(instance:{type_activity.capitalize()}Instance{{id_{type_activity.lower()}:'{uuid_activity}'}}) return instance", file=sys.stderr)
+    print("000000000000000", file=sys.stderr)
     all_instances = db.run(f"MATCH (a:Network{{url:'{url_base}'}})-[r2]-(c:Course{{id:{id_course}}})-[r3]-(instance:{type_activity.capitalize()}Instance{{id_{type_activity.lower()}:'{uuid_activity}'}}) return instance").data()
     return all_instances
 

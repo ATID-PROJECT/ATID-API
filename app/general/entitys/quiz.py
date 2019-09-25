@@ -13,12 +13,13 @@ def getQuiz( url_base, token, course_id, quiz_id ):
 
     return result
 
-def createQuiz(url_base, token, course_id, name, description):
+def createQuiz(url_base, token, course_id, name, description, group_id):
     
     function = "local_wstemplate_handle_quiz"
-    params = f"&course_id={course_id}&name={name}&description={description}"
+    params = f"&course_id={course_id}&name={name}&description={description}&group_id={group_id}"
     final_url = str( url_base + "/" +(settings.URL_MOODLE.format(token, function+params)))
-    
+    print(final_url, file=sys.stderr)
+    print("..............", file=sys.stderr)
     r = requests.post( final_url, data={} )
 
     result = r.json()
