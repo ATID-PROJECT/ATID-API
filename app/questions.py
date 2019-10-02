@@ -763,7 +763,7 @@ class QuizResource(Resource):
         #atualizar todas 'turmas' já criadas
         for instance in all_instances:
             result = instance['instance']
-            updateQuiz(network['url'], network['token'], result['id_instance'], name, description, open_date, end_date )
+            updateQuiz(network['url'], network['token'], result['id_instance'], name, description )
 
 
         return jsonify({"updated": True})

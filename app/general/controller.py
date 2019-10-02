@@ -256,6 +256,11 @@ def isDiffAddress(url_1, url_2):
 
     return False
 
+@account_controller.route('/moodle/events/chat/', methods=['GET','POST','PUT'])
+def eventChat(db: Graph):
+    print(request.form, file=sys.stderr)
+    return ""
+    
 @account_controller.route('/moodle/events/quiz/', methods=['GET','POST','PUT'])
 def eventQuiz(db: Graph):
     if request.method == "PUT":
@@ -271,7 +276,7 @@ def eventQuiz(db: Graph):
         
         try:
             userCompletQuiz(db, id_course, id_quiz, id_user, url_item)
-            print('.......................................')
+            
             return "ok"
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
