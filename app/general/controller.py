@@ -258,9 +258,20 @@ def isDiffAddress(url_1, url_2):
 
 @account_controller.route('/moodle/events/chat/', methods=['GET','POST','PUT'])
 def eventChat(db: Graph):
-    print(request.form, file=sys.stderr)
-    return ""
-    
+    if request.method == "PUT":
+
+        id_chat = request.form['id_chat']
+        id_user = request.form['id_user']
+        id_course = request.form['id_course']
+        url_item = request.form['url_item']
+
+        if isDiffAddress( url_item, request.remote_addr):
+            abort(404)
+
+        userCompletChat(db, id_course, id_chat, id_user, url_item)
+
+        return ""
+        
 @account_controller.route('/moodle/events/quiz/', methods=['GET','POST','PUT'])
 def eventQuiz(db: Graph):
     if request.method == "PUT":
@@ -270,7 +281,9 @@ def eventQuiz(db: Graph):
         id_course = request.form['id_course']
         url_item = request.form['url_item']
 
-        
+        """
+        verificar se o ip da emissor da mensagem é o mesmo o qual o servidor está hospedado
+        """
         if isDiffAddress( url_item, request.remote_addr):
             abort(404)
         
