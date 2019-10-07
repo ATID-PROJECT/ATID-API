@@ -1,4 +1,4 @@
-
+import sys
 
 url_moodle = "webservice/rest/server.php?wstoken={0}&wsfunction={1}&moodlewsrestformat=json"
 
