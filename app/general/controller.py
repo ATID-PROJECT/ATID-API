@@ -434,6 +434,59 @@ def make_error(status_code, sub_code, message, action):
     response.status_code = status_code
     return response
 
+@account_controller.route("/users/isowner", methods=['GET'])
+@jwt_required
+def isOwnerNetwork(db: Graph):
+    current_user = get_jwt_identity()
+
+    result = User.fetch_network(db, current_user, request.args.get("network"))
+
+    if len(result) > 0:
+        return jsonify({'message': "ok"}),200
+    else:
+        return jsonify({"error": "operação não permitida"}),400
+
+@account_controller.route('/users/share', methods=['GET','POST','DELETE'])
+@jwt_required
+def shareNetwork(db: Graph):
+    current_user = get_jwt_identity()
+
+    if request.method == "GET":
+        result = User.fetch_network(db, current_user, request.args.get("network"))
+
+        if( len(result) == 0):
+            return jsonify({"error": "operação não permitida"}),400
+
+        users_sharing = User.sharingNetworkAccess(db, request.args.get("network"))
+        return jsonify( users_sharing )
+
+    dataDict = json.loads(request.data)
+    result = User.fetch_network(db, current_user, dataDict["network"])
+
+    if( len(result) == 0):
+        return jsonify({"error": "operação não permitida"}),400
+
+    if request.method == "POST":
+        
+        target_user = User.secure_fetch_by_email(db, dataDict['email'])
+        
+        alredy_added = User.fetchSharedUser(db, dataDict['email'], dataDict['network'])
+        if len(alredy_added) > 0:
+            return jsonify({'error': "usuário já adicionado."}),400
+
+        if len(target_user)!=0 and target_user[0]['user']['email'] != current_user:
+            User.addNetworkShared(db, dataDict['email'], dataDict['network'])
+            return jsonify({'message': "Usuário adicionado."}),200
+        else:
+            return jsonify({'error': "email inválido."}),400
+
+    if request.method == "DELETE":
+        User.unshare( db, dataDict["email"], dataDict['network'])
+
+        return jsonify({'message': "Usuário removido."}),200
+
+    return jsonify({'error': "Email é obrigatório"}),400
+
 @account_controller.route('/users/activity/subnetwork/save', methods=['POST'])
 @jwt_required
 def save_SubNetwork(db: Graph):

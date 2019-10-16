@@ -10,6 +10,7 @@ from .questions import *
 
 from urllib.parse import urlparse
 import sys
+
 @start_controller.route('/')
 def index(db: Graph):
     o = request.remote_addr
