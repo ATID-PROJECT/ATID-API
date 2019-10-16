@@ -1,5 +1,6 @@
 
 from py2neo.ogm import GraphObject, Property, RelatedTo
+import sys
 
 class BaseModel(GraphObject):
     """
@@ -15,7 +16,7 @@ class BaseModel(GraphObject):
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
-    
+
 class User(BaseModel):
 
     __primarykey__ = 'email'
@@ -35,11 +36,37 @@ class User(BaseModel):
     def fetch_by_email(graph, email):
         return User.match(graph, email).first()
 
+    def fetch_network(graph, email, network_id):
+        return graph.run("MATCH (u:User)-[r:ATTACHMENT]-(n:Network)\
+        WHERE u.email='%s' and n.id='%s'\
+        RETURN u.email" % (email, network_id)).data()
+
+    def fetchSharedUser(graph, email, network_id):
+        return graph.run("MATCH (u)-[rel:sharing]->(n) \
+        WHERE u.email='%s' AND n.id='%s' \
+        RETURN u" % (email, network_id)).data()
+
+    def secure_fetch_by_email(graph, email):
+        result = graph.run("MATCH (user:User) where user.email='%s' REMOVE user.password RETURN user" % (email)).data()
+        return result
+
+    def unshare(graph, email, network_id):
+        graph.run("MATCH (u)-[rel:sharing]->(n) \
+        WHERE u.email='%s' AND n.id='%s' \
+        DELETE rel" % (email, network_id)).data()
+
+    def sharingNetworkAccess(graph, id_network):
+        result = graph.run("MATCH (user:User)-[s:sharing]-(n:Network{id:'%s'}) return user" % (id_network)).data()
+        return result
+
+    def addNetworkShared(graph, email, id_network):
+        graph.run("MATCH (u:User),(n:Network) WHERE u.email='%s' and n.id='%s' \
+        create (u)-[s:sharing]->(n)" % (email, id_network)).data()
+
     def fetch_by_email_and_password(graph, email, password):
         condicao = "_.email = '{0}' AND _.passwod = '{1}'".format(email, password)
         return User.match(graph, email).where( condicao ).first()
 
-import sys
 class Course(BaseModel):
     
     __primarykey__ = 'id'
