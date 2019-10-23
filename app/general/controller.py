@@ -1,3 +1,5 @@
+from app.views import createLog
+
 import sys
 import hashlib
 import json
@@ -8,6 +10,7 @@ from flask_jwt_extended import (
     get_jwt_identity
 )
 from .UserObject import UserObject
+
 from py2neo import Graph
 import datetime
 from . import account_controller
@@ -30,6 +33,9 @@ import uuid
 
 import urllib.request, json 
 import requests
+
+from app.sqlite_models import *
+from app.database import sqlite_db
 
 source_moodle = "https://good-firefox-42.localtunnel.me"
 url_moodle = "webservice/rest/server.php?wstoken={0}&wsfunction={1}&moodlewsrestformat=json"
@@ -386,7 +392,6 @@ def getStudents(db: Graph):
             if user:
                 all_users.append( user )
     
-    print(all_users, file=sys.stderr)
     return jsonify(all_users), 200
 
 @account_controller.route('/moodle/test', methods=['GET'])
@@ -496,6 +501,16 @@ def save_SubNetwork(db: Graph):
    
     return jsonify({"sucess": "Subnetwork saved."})
 
+@account_controller.route("/network/logs",  methods=['GET'])
+@jwt_required
+def log_network(db: Graph):
+    current_user = get_jwt_identity()
+    id_network = request.args.get('network')
+
+    result = NetworkUserLog.query.filter_by(network_id=id_network).order_by(NetworkUserLog.created_on.desc())
+    return jsonify(json_list=[i.serialize for i in result.all()])
+
+
 @account_controller.route("/network/delete",  methods=['POST'])
 @jwt_required
 def delete_network(db: Graph):
@@ -531,6 +546,7 @@ def save_Network(db: Graph):
     if 'name' in dataDict:
         result = Network.update_name_by_user(db, current_user, dataDict['id'], dataDict['name'], getCurrentDate())
 
+    createLog(current_user, dataDict['id'], "Realizou alterações na rede.")
     return jsonify({"sucess": True, "message": "A Rede de atividades foi salva."})
 
 @account_controller.route('/getTime', methods=['GET'])

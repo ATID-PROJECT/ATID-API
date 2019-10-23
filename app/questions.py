@@ -4,6 +4,7 @@ from flask_jwt_extended import (
     JWTManager, jwt_required, create_access_token,
     get_jwt_identity
 )
+from app.views import start_controller,createLog
 from py2neo import Graph
 from flask import Flask, jsonify, request, make_response
 import random
@@ -52,7 +53,7 @@ def questions_get(db: Graph):
     uuid = request.args.get("uuid")
     network_id = request.args.get("network_id")
     questions = db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(question{uuid: '%s'}) return question" % (current_user, network_id, uuid)).data()
-    print(questions, file=sys.stderr)
+    
     return jsonify(questions)
 
 @start_controller.route('/resources/get', methods=['GET'])
@@ -107,6 +108,7 @@ class ExternToolResource(Resource):
             self.db.push(externtool)
 
             Network.addExternTool(self.db, current_user, dataDict["network_id"], uuid)
+            createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
 
         except Exception as e:
             print("ERRO:",file=sys.stderr)
@@ -188,6 +190,7 @@ class ForumResource(Resource):
             self.db.push(forum)
 
             Network.addForum(self.db, current_user, dataDict["network_id"], uuid)
+            createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
             
         except Exception as e:
             print("ERRO:",file=sys.stderr)
@@ -266,6 +269,7 @@ class GlossarioResource(Resource):
         self.db.push(glossario)
 
         Network.addGlossario(self.db, current_user, dataDict["network_id"], uuid)
+        createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
         return jsonify({"sucess": True})
 
     @jwt_required
@@ -360,6 +364,7 @@ class SearchResource(Resource):
         self.db.push(search)
 
         Network.addSearch(self.db, current_user, dataDict["network_id"], uuid)
+        createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
         return jsonify({"sucess": True})
 
     @jwt_required
@@ -459,6 +464,8 @@ class URLResource(Resource):
         self.db.push(url)
 
         Network.addURL(self.db, current_user, dataDict["network_id"], uuid)
+        createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
+
         return jsonify({"sucess": True})
 
     @jwt_required
@@ -524,6 +531,8 @@ class PageResource(Resource):
         self.db.push(page)
 
         Network.addPage(self.db, current_user, dataDict["network_id"], uuid)
+        createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
+
         return jsonify({"sucess": True})
 
     @jwt_required
@@ -595,6 +604,8 @@ class FileResource(Resource):
         self.db.push(file)
 
         Network.addFile(self.db, current_user, dataDict["network_id"], uuid)
+        createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
+
         return jsonify({"sucess": True})
 
     @jwt_required
@@ -670,6 +681,8 @@ class ConditionResource(Resource):
         self.db.push(condition)
 
         Network.addCondition(self.db, current_user, dataDict["network_id"], dataDict["id_transiction"])
+        createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
+
         return jsonify({"sucess": True})
 
     @jwt_required
@@ -732,6 +745,8 @@ class QuizResource(Resource):
         self.db.push(quiz)
 
         Network.addQuiz(self.db, current_user, dataDict["network_id"], uuid)
+        createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
+
         return jsonify({"sucess": True})
 
     @jwt_required
@@ -808,6 +823,8 @@ class ChatResource(Resource):
         self.db.push(chat)
 
         Network.addChat(self.db, current_user, dataDict["network_id"], uuid)
+        createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
+
         return jsonify({"sucess": True})
 
     @jwt_required
@@ -882,6 +899,8 @@ class WikiResource(Resource):
         self.db.push(wiki)
 
         Network.addWiki(self.db, current_user, dataDict["network_id"], uuid)
+        createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
+
         return jsonify({"sucess": True})
 
     @jwt_required
@@ -970,6 +989,8 @@ class LessonResource(Resource):
         self.db.push(lesson)
 
         Network.addLesson(self.db, current_user, dataDict["network_id"], uuid)
+        createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
+
         return jsonify({"sucess": True})
     
     @jwt_required
@@ -1072,6 +1093,8 @@ class DatabaseResource(Resource):
         self.db.push(database)
 
         Network.addDatabase(self.db, current_user, dataDict["network_id"], uuid)
+        createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
+
         return jsonify({"sucess": True}) 
 
 
@@ -1091,14 +1114,6 @@ class DatabaseResource(Resource):
              return database"
 
         self.db.run(query).data()
-        
-        try:
-            self.db.run(query).data()
-        except Exception as e:
-            print("aaaaaaaaaaaaaaa", file=sys.stderr)
-            print(str(e), file=sys.stderr)
-
-        print("aaaaaaaaaaaaaaa", file=sys.stderr)
 
         database = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(database:Database{uuid:'%s'}) return database" % (current_user, network_id, uuid)).data()        
         network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
@@ -1111,6 +1126,8 @@ class DatabaseResource(Resource):
         for instance in all_instances:
             result = instance['instance']
             updateDatabase(network['url'], network['token'], result['id_instance'], name, description)
+
+        createLog(current_user, dataDict["network_id"], "Atualizou a atividade: "+str(dataDict["name"]))
 
         return jsonify({"updated": True})
 
@@ -1155,6 +1172,8 @@ class ChoiceResource(Resource):
         self.db.push(choice)
 
         Network.addChoice(self.db, current_user, dataDict["network_id"], uuid)
+        createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
+
         return jsonify({"sucess": True})
 
     @jwt_required
