@@ -41,6 +41,11 @@ class User(BaseModel):
         WHERE u.email='%s' and n.id='%s'\
         RETURN u.email" % (email, network_id)).data()
 
+    def fetch_networks_available(graph, email, network_id):
+        return graph.run("MATCH (u:User)-[r]-(n:Network)\
+        WHERE u.email='%s' and n.id='%s'\
+        RETURN n.id" % (email, network_id)).data()
+
     def fetchSharedUser(graph, email, network_id):
         return graph.run("MATCH (u)-[rel:sharing]->(n) \
         WHERE u.email='%s' AND n.id='%s' \

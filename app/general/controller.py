@@ -507,6 +507,11 @@ def log_network(db: Graph):
     current_user = get_jwt_identity()
     id_network = request.args.get('network')
 
+    networks_list = User.fetch_networks_available(db, current_user, id_network)
+
+    if len(networks_list) <= 0:
+        return jsonify({json_list: []}), 200
+
     result = NetworkUserLog.query.filter_by(network_id=id_network).order_by(NetworkUserLog.created_on.desc())
     return jsonify(json_list=[i.serialize for i in result.all()])
 
