@@ -15,8 +15,10 @@ from flask import Flask, Config
 from flask.views import View
 from flask_injector import FlaskInjector
 from injector import inject
+import os
 
 from flask import request, jsonify
+from flask_migrate import Migrate
 
 from .manage import default_config_app
 from .JWTManager import jwt
@@ -25,11 +27,14 @@ from flask_cors import CORS
 from flask_injector import FlaskInjector
 
 from injector import Module, singleton
+from .database import sqlite_db
 
 from flask_restful import Api
 from py2neo import Graph
 
 from .questions import ExternToolResource, WikiResource, GlossarioResource, ForumResource, PageResource, URLResource, FileResource, ConditionResource, QuizResource, ChatResource, LessonResource, DatabaseResource, ChoiceResource
+
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 class AppModule(Module):
     def __init__(self, app):
@@ -51,11 +56,17 @@ class AppModule(Module):
 def create_app():
     app = Flask(__name__)
     app.config['JWT_SECRET_KEY'] = 'super-secret'
+    app.config['SQLALCHEMY_DATABASE_URI'] =\
+    'sqlite:////' + os.path.join(basedir, 'data.sqlite')
+    app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
     CORS(app)
     configureDatabase(app)
 
     jwt.init_app(app)
     
+    sqlite_db.init_app(app)
+    Migrate(app, sqlite_db)
+
     app.register_blueprint(account_controller)
     app.register_blueprint(start_controller)
 
