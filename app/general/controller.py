@@ -631,7 +631,7 @@ def register(db: Graph):
 
     expires = datetime.timedelta(minutes=30)
     access_token = create_access_token(identity=user, expires_delta=expires)
-    ret = {'token': access_token}
+    ret = {'token': access_token, 'username': usuario.email}
 
     return jsonify(ret), 200
 
@@ -639,7 +639,7 @@ def register(db: Graph):
 def login(db: Graph):
     dataDict = json.loads(request.data)
     
-    usuario = User.fetch_by_email_and_password(db, email=dataDict['email'],password=getHash512(dataDict['password']))#Usuario.query.filter_by(email=username,senha=getHash512(password)).first()
+    usuario = User.fetch_by_email_and_password(db, email=dataDict['email'],password=getHash512(dataDict['password']))
     if not usuario:
         return jsonify({"error": "Email ou senha inválido."}), 400
 

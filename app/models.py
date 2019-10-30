@@ -478,12 +478,15 @@ class Network(BaseModel):
     attachment = RelatedTo(User)
     subNetworks = RelatedTo(SubNetwork)
 
+    def getActivity(graph, user, activity_uuid, activity_type):
+        return graph.run( f"MATCH (u:User {{email:'{user}'}})-[r]-(:Network)-[:HAS_QUESTIONS]-\
+        (activity:{activity_type}{{uuid: '{activity_uuid}'}}) return activity" ).data()
+
     def getQuantity(graph, user):
         return graph.evaluate("Match (p:User{email:'%s'})-[r]-(activity:Network) return COUNT(*)" % user)
     
     def addSearch(graph, user, id, search_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (search:Search{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(search)" % (user ,id, search_id))
-     
 
     def addCourse(graph, user, id, course_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (course:Course{id: %s}) CREATE (a)-[:HAS_COURSE]->(course)" % (user ,id, course_id))
