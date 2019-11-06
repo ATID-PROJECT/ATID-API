@@ -100,7 +100,7 @@ def createGroup( url_base, token, course_id, name, description ):
     return result
 
 def createQuestion(item, url_base, token, course_id, db = None, current_user=""):
-    
+
     label = str(item['label']).lower()
     
     if label == "chat":
@@ -147,9 +147,10 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
         Course.addForum(db, current_user, course_id, forum_instance.uuid)
 
     elif label == "externtool":
+        
         group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
         lti = createExterntool( url_base, token, course_id, item['name'], item['description'], group['id'])
-    
+        
         lti_instance = ExternToolInstance()
         lti_instance.uuid = generateUUID()
         
@@ -160,7 +161,6 @@ def createQuestion(item, url_base, token, course_id, db = None, current_user="")
         db.push( lti_instance )
 
         Course.addExternTool(db, current_user, course_id, lti_instance.uuid)
-        
 
     elif label == "glossario":
         group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
@@ -631,7 +631,7 @@ def register(db: Graph):
 
     expires = datetime.timedelta(minutes=30)
     access_token = create_access_token(identity=user, expires_delta=expires)
-    ret = {'token': access_token}
+    ret = {'token': access_token, 'username': usuario.email}
 
     return jsonify(ret), 200
 
@@ -639,7 +639,7 @@ def register(db: Graph):
 def login(db: Graph):
     dataDict = json.loads(request.data)
     
-    usuario = User.fetch_by_email_and_password(db, email=dataDict['email'],password=getHash512(dataDict['password']))#Usuario.query.filter_by(email=username,senha=getHash512(password)).first()
+    usuario = User.fetch_by_email_and_password(db, email=dataDict['email'],password=getHash512(dataDict['password']))
     if not usuario:
         return jsonify({"error": "Email ou senha inválido."}), 400
 

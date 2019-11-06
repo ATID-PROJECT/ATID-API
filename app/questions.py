@@ -11,6 +11,7 @@ import random
 import string
 from py2neo import Relationship, Node
 
+from app.general.controller import createQuestion 
 #sys.path.append("..")
 from app.JWTManager import jwt
 import uuid 
@@ -102,12 +103,23 @@ class ExternToolResource(Resource):
         try:
             externtool = ExternTool()
             externtool.uuid = uuid
+            externtool.label = "externtool"
             externtool.name = dataDict["name"]
             externtool.description = dataDict["description"]
 
             self.db.push(externtool)
 
             Network.addExternTool(self.db, current_user, dataDict["network_id"], uuid)
+
+            network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(net:Network{id:'%s'}) return net" % (current_user, dataDict["network_id"])).data()[0]['net']
+            externtool = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(externtool:ExternTool{uuid:'%s'}) return externtool" % (current_user, dataDict["network_id"], uuid)).data()[0]['externtool']
+
+            if network and network['url'] != None:
+                all_courses = self.db.run("MATCH (u:User{email:'%s'})-[r]-(a:Network{id:'%s'})-[:HAS_COURSE]-(course) return course" % (current_user, dataDict["network_id"])).data()
+                for course in all_courses:
+                    course = course["course"]
+                    createQuestion( externtool, network['url'] , network['token'], int(course['id']), self.db, current_user)
+
             createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
 
         except Exception as e:
@@ -121,32 +133,39 @@ class ExternToolResource(Resource):
         
         dataDict = request.get_json(force=True)
         current_user = get_jwt_identity()
+
         network_id = dataDict["network_id"]
         uuid = dataDict["uuid"]
-
         name = dataDict["name"]
         description = dataDict["description"]
 
-        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(externtool:ExternTool{{uuid:'{uuid}'}}) \
+        activities = Network.getActivity(self.db, current_user, uuid, 'ExternTool')
+
+        if len(activities) > 0:
+            activity = dict(activities[0]['activity'])
+
+            query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(externtool:ExternTool{{uuid:'{uuid}'}}) \
             SET externtool.name = '{name}',\
             externtool.description = '{description}'\
                  return externtool"
-        
-        self.db.run(query).data()
-        
-        lti = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(lti:ExternTool{uuid:'%s'}) return lti" % (current_user, network_id, uuid)).data()        
-        network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
-        
-        uuid_lti = lti[0]['lti']['uuid']
-        
-        all_instances = self.db.run("MATCH (instance:ExternToolInstance{id_extern_tool: '%s'}) return instance" % (uuid_lti)).data()
-        
-        #atualizar todas 'turmas' já criadas
-        for instance in all_instances:
-            result = instance['instance']
-            updateExterntool(network['url'], network['token'], result['id_instance'], name, description)
-        
-        return jsonify({"updated": True})
+
+            self.db.run(query).data()
+
+            network = self.db.run( f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(network:Network{{id:'{network_id}'}}) return network").data()[0]['network']
+            
+            all_instances = self.db.run( f"MATCH (instance:ExternToolInstance{{id_extern_tool: '{uuid}'}}) return instance").data()
+            
+            #atualizar todas 'turmas' já criadas
+            for instance in all_instances:
+                result = instance['instance']
+                updateExterntool(network['url'], network['token'], result['id_instance'], name, description)
+
+            if activity['name'] == name:
+                createLog(current_user, dataDict["network_id"], "Atualizou a atividade: "+str(dataDict["name"]))
+            else:
+                createLog(current_user, dataDict["network_id"], f"Atualizou a atividade {activity['name']} para {name}")
+
+            return jsonify({"updated": True})
 
     @jwt_required
     def delete(self):
@@ -177,56 +196,59 @@ class ForumResource(Resource):
 
     @jwt_required
     def post(self):
-        try:
-            dataDict = request.get_json(force=True)
-            current_user = get_jwt_identity()
-            uuid = generateUUID()
-        
-            forum = Forum()
-            forum.uuid = uuid
-            forum.name = dataDict["name"]
-            forum.description = dataDict["description"]
-        
-            self.db.push(forum)
+        dataDict = request.get_json(force=True)
+        current_user = get_jwt_identity()
+        uuid = generateUUID()
+    
+        forum = Forum()
+        forum.uuid = uuid
+        forum.name = dataDict["name"]
+        forum.description = dataDict["description"]
+    
+        self.db.push(forum)
 
-            Network.addForum(self.db, current_user, dataDict["network_id"], uuid)
-            createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
-            
-        except Exception as e:
-            print("ERRO:",file=sys.stderr)
-            print(str(e), file=sys.stderr)
+        Network.addForum(self.db, current_user, dataDict["network_id"], uuid)
+        createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
+
         return jsonify({"sucess": True})
 
     @jwt_required
     def put(self):
         dataDict = request.get_json(force=True)
         current_user = get_jwt_identity()
+
         network_id = dataDict["network_id"]
         uuid = dataDict["uuid"]
-
         name = dataDict["name"]
         description = dataDict["description"]
 
-        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(forum:Forum{{uuid:'{uuid}'}}) \
+        activities = Network.getActivity(self.db, current_user, uuid, 'Forum')
+
+        if len(activities) > 0:
+            activity = dict(activities[0]['activity'])
+
+            query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(forum:Forum{{uuid:'{uuid}'}}) \
             SET forum.name = '{name}',\
             forum.description = '{description}'\
-                return forum"
+            return forum"
 
-        self.db.run(query).data()
+            self.db.run(query).data()
 
-        forum = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(forum:Forum{uuid:'%s'}) return forum" % (current_user, network_id, uuid)).data()        
-        network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
+            network = self.db.run( f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(network:Network{{id:'{network_id}'}}) return network").data()[0]['network']
+            
+            all_instances = self.db.run( f"MATCH (instance:ForumInstance{{id_forum: '{uuid}'}}) return instance" ).data()
+            
+            #atualizar todas 'turmas' já criadas
+            for instance in all_instances:
+                result = instance['instance']
+                updateForum(network['url'], network['token'], result['id_instance'], name, description)
 
-        uuid_forum = forum[0]['forum']['uuid']
-        
-        all_instances = self.db.run("MATCH (instance:ForumInstance{id_forum: '%s'}) return instance" % (uuid_forum)).data()
+            if activity['name'] == name:
+                createLog(current_user, dataDict["network_id"], "Atualizou a atividade: "+str(dataDict["name"]))
+            else:
+                createLog(current_user, dataDict["network_id"], f"Atualizou a atividade {activity['name']} para {name}")
 
-        #atualizar todas 'turmas' já criadas
-        for instance in all_instances:
-            result = instance['instance']
-            updateForum(network['url'], network['token'], result['id_instance'], name, description)
-
-        return jsonify({"updated": True})
+            return jsonify({"updated": True})
 
     @jwt_required
     def delete(self):
@@ -276,30 +298,37 @@ class GlossarioResource(Resource):
     def put(self):
         dataDict = request.get_json(force=True)
         current_user = get_jwt_identity()
+
         network_id = dataDict["network_id"]
         uuid = dataDict["uuid"]
-
         name = dataDict["name"]
         description = dataDict["description"]
 
-        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(glossario:Glossario{{uuid:'{uuid}'}}) \
+        activities = Network.getActivity(self.db, current_user, uuid, 'Glossario')
+
+        if len(activities) > 0:
+            activity = dict(activities[0]['activity'])
+
+            query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(glossario:Glossario{{uuid:'{uuid}'}}) \
             SET glossario.name = '{name}',\
             glossario.description = '{description}'\
                 return glossario"
 
-        self.db.run(query).data()
+            self.db.run(query).data()
 
-        glossario = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(glossario:Glossario{uuid:'%s'}) return glossario" % (current_user, network_id, uuid)).data()        
-        network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
-        
-        uuid_glossario = glossario[0]['glossario']['uuid']
-        
-        all_instances = self.db.run("MATCH (instance:GlossarioInstance{id_glossario: '%s'}) return instance" % (uuid_glossario)).data()
-        
-        #atualizar todas 'turmas' já criadas
-        for instance in all_instances:
-            result = instance['instance']
-            updateGlossario(network['url'], network['token'], result['id_instance'], name, description)
+            network = self.db.run( f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(network:Network{{id:'{network_id}'}}) return network").data()[0]['network']
+            
+            all_instances = self.db.run( f"MATCH (instance:GlossarioInstance{{id_glossario: '{uuid}'}}) return instance").data()
+            
+            #atualizar todas 'turmas' já criadas
+            for instance in all_instances:
+                result = instance['instance']
+                updateGlossario(network['url'], network['token'], result['id_instance'], name, description)
+
+            if activity['name'] == name:
+                createLog(current_user, dataDict["network_id"], "Atualizou a atividade: "+str(dataDict["name"]))
+            else:
+                createLog(current_user, dataDict["network_id"], f"Atualizou a atividade {activity['name']} para {name}")
 
         return jsonify({"updated": True})
 
@@ -753,33 +782,37 @@ class QuizResource(Resource):
     def put(self):
         dataDict = request.get_json(force=True)
         current_user = get_jwt_identity()
+
         network_id = dataDict["network_id"]
         uuid = dataDict["uuid"]
-
         name = dataDict["name"]
         description = dataDict["description"]
+        
+        activities = Network.getActivity(self.db, current_user, uuid, 'Quiz')
 
-        set_query = f""
+        if len(activities) > 0:
+            activity = dict(activities[0]['activity'])
 
-        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(quiz:Quiz{{uuid:'{uuid}'}}) \
+            query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(quiz:Quiz{{uuid:'{uuid}'}}) \
              SET quiz.name = '{name}',\
              quiz.description = '{description}'\
              return quiz"
 
-        self.db.run(query).data()
+            self.db.run(query).data()
 
-        quiz = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(quiz:Quiz{uuid:'%s'}) return quiz" % (current_user, network_id, uuid)).data()        
-        network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
-        
-        uuid_quiz = quiz[0]['quiz']['uuid']
+            network = self.db.run( f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(network:Network{{id:'{network_id}'}}) return network").data()[0]['network']
+            
+            all_instances = self.db.run( f"MATCH (instance:QuizInstance{{id_quiz: '{uuid}'}}) return instance" ).data()
+            
+            #atualizar todas 'turmas' já criadas
+            for instance in all_instances:
+                result = instance['instance']
+                updateQuiz(network['url'], network['token'], result['id_instance'], name, description )
 
-        all_instances = self.db.run("MATCH (instance:QuizInstance{id_quiz: '%s'}) return instance" % (uuid_quiz)).data()
-
-        #atualizar todas 'turmas' já criadas
-        for instance in all_instances:
-            result = instance['instance']
-            updateQuiz(network['url'], network['token'], result['id_instance'], name, description )
-
+            if activity['name'] == name:
+                createLog(current_user, dataDict["network_id"], "Atualizou a atividade: "+str(dataDict["name"]))
+            else:
+                createLog(current_user, dataDict["network_id"], f"Atualizou a atividade {activity['name']} para {name}")
 
         return jsonify({"updated": True})
 
@@ -818,11 +851,22 @@ class ChatResource(Resource):
 
         chat = Chat()
         chat.uuid = uuid
+        chat.label = "chat"
         chat.name = dataDict["name"]
         chat.description = dataDict["description"]
         self.db.push(chat)
 
         Network.addChat(self.db, current_user, dataDict["network_id"], uuid)
+
+        network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(net:Network{id:'%s'}) return net" % (current_user, dataDict["network_id"])).data()[0]['net']
+        chat = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(chat:Chat{uuid:'%s'}) return chat" % (current_user, dataDict["network_id"], uuid)).data()[0]['chat']
+
+        if network and network['url'] != None:
+            all_courses = self.db.run("MATCH (u:User{email:'%s'})-[r]-(a:Network{id:'%s'})-[:HAS_COURSE]-(course) return course" % (current_user, dataDict["network_id"])).data()
+            for course in all_courses:
+                course = course["course"]
+                createQuestion( chat, network['url'] , network['token'], int(course['id']), self.db, current_user)
+
         createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
 
         return jsonify({"sucess": True})
@@ -890,7 +934,6 @@ class WikiResource(Resource):
         current_user = get_jwt_identity()
         uuid = generateUUID()
 
-        
         wiki = Wiki()
         wiki.uuid = uuid
         wiki.name = dataDict["name"]
@@ -907,30 +950,37 @@ class WikiResource(Resource):
     def put(self):
         dataDict = request.get_json(force=True)
         current_user = get_jwt_identity()
+
         network_id = dataDict["network_id"]
         uuid = dataDict["uuid"]
-
         name = dataDict["name"]
         description = dataDict["description"]
 
-        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(wiki:Wiki{{uuid:'{uuid}'}}) \
+        activities = Network.getActivity(self.db, current_user, uuid, 'Wiki')
+
+        if len(activities) > 0:
+            activity = dict(activities[0]['activity'])
+
+            query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(wiki:Wiki{{uuid:'{uuid}'}}) \
             SET wiki.name = '{name}',\
             wiki.description = '{description}'\
             return wiki"
 
-        self.db.run(query).data()
+            self.db.run(query).data()
 
-        wiki = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(wiki:Wiki{uuid:'%s'}) return wiki" % (current_user, network_id, uuid)).data()        
-        network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
-        
-        uuid_wiki = wiki[0]['wiki']['uuid']
+            network = self.db.run( f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(network:Network{{id:'{network_id}'}}) return network").data()[0]['network']
+            
+            all_instances = self.db.run( f"MATCH (instance:WikiInstance{{id_wiki: '{uuid}'}}) return instance" ).data()
+            
+            #atualizar todas 'turmas' já criadas
+            for instance in all_instances:
+                result = instance['instance']
+                updateWiki(network['url'], network['token'], result['id_instance'], name, description)
 
-        all_instances = self.db.run("MATCH (instance:WikiInstance{id_wiki: '%s'}) return instance" % (uuid_wiki)).data()
-
-        #atualizar todas 'turmas' já criadas
-        for instance in all_instances:
-            result = instance['instance']
-            updateWiki(network['url'], network['token'], result['id_instance'], name, description)
+            if activity['name'] == name:
+                createLog(current_user, dataDict["network_id"], "Atualizou a atividade: "+str(dataDict["name"]))
+            else:
+                createLog(current_user, dataDict["network_id"], f"Atualizou a atividade {activity['name']} para {name}")
 
         return jsonify({"updated": True})
 
@@ -1017,8 +1067,6 @@ class LessonResource(Resource):
         allow_end_date = dataDict["allow_end_date"]
         allow_time_limit = dataDict["allow_time_limit"]
 
-        set_query = f""
-
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(lesson:Lesson{{uuid:'{uuid}'}}) \
             SET lesson.name = '{name}',\
             lesson.description = '{description}',\
@@ -1050,6 +1098,7 @@ class LessonResource(Resource):
 
         query = f"Match (p:User{{email:'{current_user}'}})-[r1]-(activity:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(lesson:Lesson{{uuid:'{uuid}'}}) DETACH DELETE lesson "
         self.db.run(query)
+
 class DatabaseResource(Resource):
 
     def __init__(self, database):
@@ -1102,32 +1151,37 @@ class DatabaseResource(Resource):
     def put(self):
         dataDict = request.get_json(force=True)
         current_user = get_jwt_identity()
+
         network_id = dataDict["network_id"]
         uuid = dataDict["uuid"]
-
         name = dataDict["name"]
         description = dataDict["description"]
         
-        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(database:Database{{uuid:'{uuid}'}}) \
-            SET database.name = '{name}',\
-            database.description = '{description}'\
-             return database"
+        activities = Network.getActivity(self.db, current_user, uuid, 'Database')
 
-        self.db.run(query).data()
+        if len(activities) > 0:
+            activity = dict(activities[0]['activity'])
 
-        database = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(database:Database{uuid:'%s'}) return database" % (current_user, network_id, uuid)).data()        
-        network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
+            query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(database:Database{{uuid:'{uuid}'}}) \
+                SET database.name = '{name}',\
+                database.description = '{description}'\
+                return database"
 
-        uuid_database = database[0]['database']['uuid']
-        
-        all_instances = self.db.run("MATCH (instance:DatabaseInstance{id_database: '%s'}) return instance" % (uuid_database)).data()
+            self.db.run(query).data()
 
-        #atualizar todas 'turmas' já criadas
-        for instance in all_instances:
-            result = instance['instance']
-            updateDatabase(network['url'], network['token'], result['id_instance'], name, description)
+            network = self.db.run( f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(network:Network{{id:'{network_id}'}}) return network").data()[0]['network']
+            
+            all_instances = self.db.run( f"MATCH (instance:DatabaseInstance{{id_database: '{uuid}'}}) return instance" ).data()
+            
+            #atualizar todas 'turmas' já criadas
+            for instance in all_instances:
+                result = instance['instance']
+                updateDatabase(network['url'], network['token'], result['id_instance'], name, description)
 
-        createLog(current_user, dataDict["network_id"], "Atualizou a atividade: "+str(dataDict["name"]))
+            if activity['name'] == name:
+                createLog(current_user, dataDict["network_id"], "Atualizou a atividade: "+str(dataDict["name"]))
+            else:
+                createLog(current_user, dataDict["network_id"], f"Atualizou a atividade {activity['name']} para {name}")
 
         return jsonify({"updated": True})
 
@@ -1180,20 +1234,30 @@ class ChoiceResource(Resource):
     def put(self):
         dataDict = request.get_json(force=True)
         current_user = get_jwt_identity()
+
         network_id = dataDict["network_id"]
         uuid = dataDict["uuid"]
-
         name = dataDict["name"]
         description = dataDict["description"]
 
-        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(choice:Choice{{uuid:'{uuid}'}}) \
+        activities = Network.getActivity(self.db, current_user, uuid, 'Choice')
+
+        if len(activities) > 0:
+            activity = dict(activities[0]['activity'])
+
+            query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(choice:Choice{{uuid:'{uuid}'}}) \
             SET choice.name = '{name}',\
             choice.description = '{description}'\
             return choice"
 
-        self.db.run(query).data()
+            self.db.run(query).data()
 
-        return jsonify({"updated": True})
+            if activity['name'] == name:
+                createLog(current_user, dataDict["network_id"], "Atualizou a atividade: " + name)
+            else:
+                createLog(current_user, dataDict["network_id"], f"Atualizou a atividade {activity['name']} para {name}")
+
+            return jsonify({"updated": True})
 
     @jwt_required
     def delete(self):

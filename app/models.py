@@ -140,6 +140,7 @@ class Quiz(BaseModel):
     uuid = Property()
 
     name = Property()
+    label = Property()
     description = Property()
     time_limit = Property()
     time_type  = Property()
@@ -173,6 +174,7 @@ class Chat(BaseModel):
     uuid = Property()
 
     name = Property()
+    label = Property()
     description = Property()
 
 class ChatInstance(BaseModel):
@@ -192,6 +194,7 @@ class Wiki(BaseModel):
     uuid = Property()
 
     name = Property()
+    label = Property()
     description = Property()
     wikimode = Property()
     firstpagetitle = Property()
@@ -202,7 +205,7 @@ class WikiInstance(BaseModel):
     __primarykey__ = 'uuid'
 
     uuid = Property()
-
+    
     id_wiki = Property()
     id_instance = Property()
     id_group = Property()
@@ -214,6 +217,7 @@ class File(BaseModel):
     uuid = Property()
 
     name = Property()
+    label = Property()
     description = Property()
     type_display = Property()
     type_filter_content = Property()
@@ -231,6 +235,7 @@ class Forum(BaseModel):
     uuid = Property()
 
     name = Property()
+    label = Property()
     description = Property()
     type_forum = Property()
 
@@ -257,6 +262,7 @@ class Glossario(BaseModel):
     uuid = Property()
 
     name = Property()
+    label = Property()
     description = Property()
     type_glossario = Property()
 
@@ -286,6 +292,7 @@ class GlossarioInstance(BaseModel):
     __primarykey__ = 'uuid'
 
     uuid = Property()
+    label = Property()
 
     id_glossario = Property()
     id_instance = Property()
@@ -297,6 +304,7 @@ class Search(BaseModel):
 
     uuid = Property()
 
+    label = Property()
     name = Property()
     description = Property()
 
@@ -348,6 +356,7 @@ class ExternTool(BaseModel):
     uuid = Property()
 
     name = Property()
+    label = Property()
     description = Property()
     show_description_course = Property()
     show_activity = Property()
@@ -383,6 +392,7 @@ class Lesson(BaseModel):
     uuid = Property()
 
     name = Property()
+    label = Property()
     description = Property()
     allow_revison = Property()
     try_again = Property()
@@ -401,7 +411,7 @@ class Lesson(BaseModel):
 class Condition(BaseModel):
     
     __primarykey__ = 'id_transiction'
-
+    
     id_activity = Property()
     id_transiction = Property()
     name_activity = Property()
@@ -414,6 +424,7 @@ class Choice(BaseModel):
     uuid = Property()
 
     name = Property()
+    label = Property()
     description = Property()
     allow_choice_update = Property()
     allow_multiple_choices = Property()
@@ -436,6 +447,7 @@ class Database(BaseModel):
 
     uuid = Property()
     name = Property()
+    label = Property()
     description = Property()
 
     approval_required = Property()
@@ -478,12 +490,15 @@ class Network(BaseModel):
     attachment = RelatedTo(User)
     subNetworks = RelatedTo(SubNetwork)
 
+    def getActivity(graph, user, activity_uuid, activity_type):
+        return graph.run( f"MATCH (u:User {{email:'{user}'}})-[r]-(:Network)-[:HAS_QUESTIONS]-\
+        (activity:{activity_type}{{uuid: '{activity_uuid}'}}) return activity" ).data()
+
     def getQuantity(graph, user):
         return graph.evaluate("Match (p:User{email:'%s'})-[r]-(activity:Network) return COUNT(*)" % user)
     
     def addSearch(graph, user, id, search_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (search:Search{uuid: '%s'}) CREATE (a)-[:HAS_QUESTIONS]->(search)" % (user ,id, search_id))
-     
 
     def addCourse(graph, user, id, course_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network {id:'%s'}), (course:Course{id: %s}) CREATE (a)-[:HAS_COURSE]->(course)" % (user ,id, course_id))
