@@ -11,6 +11,7 @@ import random
 import string
 from py2neo import Relationship, Node
 
+from app.general.controller import createQuestion 
 #sys.path.append("..")
 from app.JWTManager import jwt
 import uuid 
@@ -102,12 +103,23 @@ class ExternToolResource(Resource):
         try:
             externtool = ExternTool()
             externtool.uuid = uuid
+            externtool.label = "externtool"
             externtool.name = dataDict["name"]
             externtool.description = dataDict["description"]
 
             self.db.push(externtool)
 
             Network.addExternTool(self.db, current_user, dataDict["network_id"], uuid)
+
+            network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(net:Network{id:'%s'}) return net" % (current_user, dataDict["network_id"])).data()[0]['net']
+            externtool = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(externtool:ExternTool{uuid:'%s'}) return externtool" % (current_user, dataDict["network_id"], uuid)).data()[0]['externtool']
+
+            if network and network['url'] != None:
+                all_courses = self.db.run("MATCH (u:User{email:'%s'})-[r]-(a:Network{id:'%s'})-[:HAS_COURSE]-(course) return course" % (current_user, dataDict["network_id"])).data()
+                for course in all_courses:
+                    course = course["course"]
+                    createQuestion( externtool, network['url'] , network['token'], int(course['id']), self.db, current_user)
+
             createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
 
         except Exception as e:
@@ -839,11 +851,22 @@ class ChatResource(Resource):
 
         chat = Chat()
         chat.uuid = uuid
+        chat.label = "chat"
         chat.name = dataDict["name"]
         chat.description = dataDict["description"]
         self.db.push(chat)
 
         Network.addChat(self.db, current_user, dataDict["network_id"], uuid)
+
+        network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(net:Network{id:'%s'}) return net" % (current_user, dataDict["network_id"])).data()[0]['net']
+        chat = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(chat:Chat{uuid:'%s'}) return chat" % (current_user, dataDict["network_id"], uuid)).data()[0]['chat']
+
+        if network and network['url'] != None:
+            all_courses = self.db.run("MATCH (u:User{email:'%s'})-[r]-(a:Network{id:'%s'})-[:HAS_COURSE]-(course) return course" % (current_user, dataDict["network_id"])).data()
+            for course in all_courses:
+                course = course["course"]
+                createQuestion( chat, network['url'] , network['token'], int(course['id']), self.db, current_user)
+
         createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
 
         return jsonify({"sucess": True})
