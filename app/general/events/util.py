@@ -82,7 +82,6 @@ def checkNextActivity(instance, target_uuid):
 
 
 def getTransictionsByAny(db, id_course, id_quiz, url_moodle, type_table):
-    print("oxeeeeeeeeeeeeeeeeeeee-------------------", file=sys.stderr)
     table = str(type_table).capitalize()
 
     target_transiction_list = []
