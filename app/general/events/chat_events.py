@@ -22,10 +22,6 @@ def getNumMessages(url_base, token, id_user, chat_id):
 
 def userCompletChat( db, id_course, id_chat, id_user, url_moodle ):
     try:
-        print( db , file=sys.stderr)
-        print( id_course , file=sys.stderr)
-        print( id_chat , file=sys.stderr)
-        print( url_moodle , file=sys.stderr)
         token, target_transictions, transictions, instances = getTransictionsByAny( db, id_course, id_chat, url_moodle, 'chat')
 
         for instance in instances:

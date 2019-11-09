@@ -79,6 +79,18 @@ def courses_getall(db: Graph):
         ORDER BY course.created_at DESC SKIP %s LIMIT %s" % (current_user, page*size, size)).data()
     return jsonify(courses)
 
+@start_controller.route('/courses/get', methods=['GET'])
+@jwt_required
+def courses_get_by_id(db: Graph):
+    current_user = get_jwt_identity()
+    course_id = request.args.get("course_id")
+    
+    courses = db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network)-[r:HAS_COURSE]-(course{id:%s}) \
+        set course.label = labels(course)[0]\
+        return course.id as id, course.fullname as fullname, course.shortname as shortname, course.network_id as network_id, course.created_at as created_at \
+        " % (current_user, course_id)).data()
+    return jsonify(courses)
+
 
 class ExternToolResource(Resource):
     
