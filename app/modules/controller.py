@@ -1,4 +1,4 @@
-from app.views import createLog
+from app.views import createLog, get_enrolled
 
 import sys
 import hashlib
@@ -16,16 +16,16 @@ import datetime
 from . import account_controller
 from flask import Response
 from app.models import *
+
 import random
 import string
 from py2neo import Relationship, Node
-
-from .entitys import *
 
 from .updateActivitys import updateFromMoodle
 from urllib import parse
 from .events import *
 import os
+from .activitys import *
 
 #sys.path.append("..")
 from app.JWTManager import jwt
@@ -37,7 +37,7 @@ import requests
 from app.sqlite_models import *
 from app.database import sqlite_db
 
-source_moodle = "https://good-firefox-42.localtunnel.me"
+source_moodle = "localhost"
 url_moodle = "webservice/rest/server.php?wstoken={0}&wsfunction={1}&moodlewsrestformat=json"
 
 def getUrl( complet_url ):
@@ -93,138 +93,140 @@ def createGroup( url_base, token, course_id, name, description ):
 
     params = f"&groups[0][name]={name}&groups[0][description]={description}&groups[0][courseid]={course_id}"
     final_url = str( url_base + "/" +(settings.URL_MOODLE.format(token, function+params)))
-
     r = requests.post( final_url, data={} )
     result = r.json()
 
     return result
 
 def createQuestion(item, url_base, token, course_id, db = None, current_user=""):
-
-    label = str(item['label']).lower()
+    try:
+        label = str(item['label']).lower()
     
-    if label == "chat":
-        
-        group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
-        
-        chat =  createChat( url_base, token, course_id, item['name'], item['description'], group['id'] )
-        
-        chat_instance = ChatInstance()
-        chat_instance.uuid = generateUUID()
-        chat_instance.id_chat = item['uuid']
-        chat_instance.id_group = group['id']
-        chat_instance.id_instance = chat['id']
+        if label == "chat":
+            
+            group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
+            
+            chat =  createChat( url_base, token, course_id, item['name'], item['description'], group['id'] )
+            
+            chat_instance = ChatInstance()
+            chat_instance.uuid = generateUUID()
+            chat_instance.id_chat = item['uuid']
+            chat_instance.id_group = group['id']
+            chat_instance.id_instance = chat['id']
 
-        db.push( chat_instance )
+            db.push( chat_instance )
 
-        Course.addChat(db, current_user, course_id, chat_instance.uuid)
+            Course.addChat(db, current_user, course_id, chat_instance.uuid)
 
-    elif label == "database":
-        group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
+        elif label == "database":
+            group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
 
-        data = createDatabase( url_base, token, course_id, item['name'], item['description'], group['id'] )
-        data_instance = DatabaseInstance()
-        data_instance.uuid = generateUUID()
-        data_instance.id_database = item['uuid']
-        data_instance.id_instance = data['id']
-        data_instance.id_group = group['id']
+            data = createDatabase( url_base, token, course_id, item['name'], item['description'], group['id'] )
+            data_instance = DatabaseInstance()
+            data_instance.uuid = generateUUID()
+            data_instance.id_database = item['uuid']
+            data_instance.id_instance = data['id']
+            data_instance.id_group = group['id']
 
-        db.push( data_instance )
+            db.push( data_instance )
 
-        Course.addDatabase(db, current_user, course_id, data_instance.uuid)
+            Course.addDatabase(db, current_user, course_id, data_instance.uuid)
 
-    elif label == "forum":
-        group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
-        forum = createForum( url_base, token, course_id, item['name'], item['description'], group['id'] )
+        elif label == "forum":
+            group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
+            forum = createForum( url_base, token, course_id, item['name'], item['description'], group['id'] )
 
-        forum_instance = ForumInstance()
-        forum_instance.uuid = generateUUID()
-        forum_instance.id_forum = item['uuid']
-        forum_instance.id_instance = forum['id']
-        forum_instance.id_group = group['id']
-        
-        db.push( forum_instance )
-        Course.addForum(db, current_user, course_id, forum_instance.uuid)
+            forum_instance = ForumInstance()
+            forum_instance.uuid = generateUUID()
+            forum_instance.id_forum = item['uuid']
+            forum_instance.id_instance = forum['id']
+            forum_instance.id_group = group['id']
+            
+            db.push( forum_instance )
+            Course.addForum(db, current_user, course_id, forum_instance.uuid)
 
-    elif label == "externtool":
-        
-        group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
-        lti = createExterntool( url_base, token, course_id, item['name'], item['description'], group['id'])
-        
-        lti_instance = ExternToolInstance()
-        lti_instance.uuid = generateUUID()
-        
-        lti_instance.id_extern_tool = item['uuid']
-        lti_instance.id_instance = lti['id']
-        lti_instance.id_group = group['id']
-        
-        db.push( lti_instance )
+        elif label == "externtool":
+            
+            group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
+            lti = createExterntool( url_base, token, course_id, item['name'], item['description'], group['id'])
+            
+            lti_instance = ExternToolInstance()
+            lti_instance.uuid = generateUUID()
+            
+            lti_instance.id_extern_tool = item['uuid']
+            lti_instance.id_instance = lti['id']
+            lti_instance.id_group = group['id']
+            
+            db.push( lti_instance )
 
-        Course.addExternTool(db, current_user, course_id, lti_instance.uuid)
+            Course.addExternTool(db, current_user, course_id, lti_instance.uuid)
 
-    elif label == "glossario":
-        group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
+        elif label == "glossario":
+            group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
 
-        glossario = createGlossario( url_base, token, course_id, item['name'], item['description'], group['id'] )
-        
-        glossario_instance = GlossarioInstance()
-        glossario_instance.uuid = generateUUID()
+            glossario = createGlossario( url_base, token, course_id, item['name'], item['description'], group['id'] )
+            
+            glossario_instance = GlossarioInstance()
+            glossario_instance.uuid = generateUUID()
 
-        glossario_instance.id_group = group['id']
-        glossario_instance.id_glossario = item['uuid']
-        glossario_instance.id_instance = glossario['id']
-        
-        db.push( glossario_instance )
+            glossario_instance.id_group = group['id']
+            glossario_instance.id_glossario = item['uuid']
+            glossario_instance.id_instance = glossario['id']
+            
+            db.push( glossario_instance )
 
-        Course.addGlossario(db, current_user, course_id, glossario_instance.uuid)
-        
+            Course.addGlossario(db, current_user, course_id, glossario_instance.uuid)
+            
 
-    elif label == "wiki":
-        group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
-        wiki = createWiki( url_base, token, course_id, item['name'], item['description'], group['id'])
- 
-        wiki_instance = WikiInstance()
-        wiki_instance.uuid = generateUUID()
-        wiki_instance.id_wiki = item['uuid']
-        wiki_instance.id_group = group['id']
-        wiki_instance.id_instance = wiki['id']
+        elif label == "wiki":
+            group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
+            wiki = createWiki( url_base, token, course_id, item['name'], item['description'], group['id'])
+    
+            wiki_instance = WikiInstance()
+            wiki_instance.uuid = generateUUID()
+            wiki_instance.id_wiki = item['uuid']
+            wiki_instance.id_group = group['id']
+            wiki_instance.id_instance = wiki['id']
 
-        db.push( wiki_instance )
+            db.push( wiki_instance )
 
-        Course.addWiki(db, current_user, course_id, wiki_instance.uuid)
+            Course.addWiki(db, current_user, course_id, wiki_instance.uuid)
 
-    elif label == "choice":
-        group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
-        choice = createChoice( url_base, token, course_id, item['name'], item['description'], group['id'] )
+        elif label == "choice":
+            group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
+            choice = createChoice( url_base, token, course_id, item['name'], item['description'], group['id'] )
 
-        choice_instance = ChoiceInstance()
-        choice_instance.uuid = generateUUID()
-        choice_instance.id_extern_tool = item['uuid']
-        choice_instance.id_instance = choice['id']
-        choice_instance.id_group = group['id']
+            choice_instance = ChoiceInstance()
+            choice_instance.uuid = generateUUID()
+            choice_instance.id_extern_tool = item['uuid']
+            choice_instance.id_instance = choice['id']
+            choice_instance.id_group = group['id']
 
-        db.push( choice_instance )
+            db.push( choice_instance )
 
-        Course.addChoice(db, current_user, course_id, choice_instance.uuid)
+            Course.addChoice(db, current_user, course_id, choice_instance.uuid)
 
-    elif label == "quiz":
-        group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
-        quiz = createQuiz( url_base, token, course_id, item['name'], item['description'], group['id'] )
+        elif label == "quiz":
+            group = createGroup( url_base, token, course_id, item['name']+generateUUID(), "Caminho de aprendizado" )[0]
+            quiz = createQuiz( url_base, token, course_id, item['name'], item['description'], group['id'] )
 
-        quiz_instance = QuizInstance()
-        quiz_instance.uuid = generateUUID()
-        quiz_instance.id_quiz = item['uuid']
-        quiz_instance.id_group = group['id']
-        quiz_instance.id_instance = quiz['id']
-        
-        print( item , file=sys.stderr)
-        print(",,,,,,,,,,,,,,,,,,,,,,,,", file=sys.stderr)
-        db.push( quiz_instance )
+            quiz_instance = QuizInstance()
+            quiz_instance.uuid = generateUUID()
+            quiz_instance.id_quiz = item['uuid']
+            quiz_instance.id_group = group['id']
+            quiz_instance.id_instance = quiz['id']
+            
+            db.push( quiz_instance )
 
-        Course.addQuiz(db, current_user, course_id, quiz_instance.uuid)
+            Course.addQuiz(db, current_user, course_id, quiz_instance.uuid)
 
-    #elif label == "assign":
-        #return createAssign(token, course_id, item['name'], item['description'] )
+        #elif label == "assign":
+            #return createAssign(token, course_id, item['name'], item['description'] )
+    except Exception as e:
+        print('error===========================', file=sys.stderr)
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
 
 
 @account_controller.route('/moodle/new_course', methods=['POST'])
@@ -237,21 +239,29 @@ def makeCourse(db: Graph):
     fullname = dataDict["fullname"]
     shortname = dataDict["shortname"]
     
-    network = db.run("MATCH (p:User{email:'%s'})-[r1]-(net:Network{id:'%s'}) return net" % (current_user, network_id)).data()[0]['net']
-    all_questions = db.run("MATCH (p:User{email:'%s'})-[r1]-(net:Network{id:'%s'})-[r2:HAS_QUESTIONS]-(q) return q" % (current_user, network_id)).data()
-
-    result = createCourse(network['url'], network['token'], fullname, shortname, db, network_id, current_user)
-    id_course = result['id']
-    
-    for question in all_questions:
-        item = dict(question['q'])
-        try:
-            createQuestion( item, network['url'] , network['token'], int(id_course), db, current_user)
-        except Exception as e:
-            print( str( e) , file=sys.stderr)
-            print( "================" , file=sys.stderr)
+    create_course(db, current_user, network_id, fullname, shortname)
     
     return jsonify({"message": "curso criado com sucesso", "status": 200}), 200
+
+def create_course(db, current_user, network_id, fullname, shortname):
+    try:
+        network = db.run("MATCH (p:User{email:'%s'})-[r1]-(net:Network{id:'%s'}) return net" % (current_user, network_id)).data()[0]['net']
+        all_questions = db.run("MATCH (p:User{email:'%s'})-[r1]-(net:Network{id:'%s'})-[r2:HAS_QUESTIONS]-(q) return q" % (current_user, network_id)).data()
+
+        result = createCourse(network['url'], network['token'], fullname, shortname, db, network_id, current_user)
+        print(result, file=sys.stderr)
+        id_course = result['id']
+        print('|||||========================||||', file=sys.stderr)
+        
+        for question in all_questions:
+            item = dict(question['q'])
+            createQuestion( item, network['url'] , network['token'], int(id_course), db, current_user)
+
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
+        print( "================" , file=sys.stderr)
 
 def isDiffAddress(url_1, url_2):
     url1 = parse.urlparse(url_1)
@@ -369,6 +379,10 @@ def getStudents(db: Graph):
 
     type_lower = activity_type.lower()
     type_capitalize = activity_type.capitalize()
+
+    if activity_type == "custom:start":
+        result = get_enrolled(db, current_user, network_id)
+        return jsonify( result )
 
     result = db.run(f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(net:Network{{id:'{network_id}'}}) return net").data()
     activity = db.run(f"MATCH (course:Course{{id:{course_id}}})-[r1]-(activity:{type_capitalize}Instance{{id_{type_lower}:'{activity_id}'}}) return activity").data()
@@ -510,7 +524,7 @@ def log_network(db: Graph):
     networks_list = User.fetch_networks_available(db, current_user, id_network)
 
     if len(networks_list) <= 0:
-        return jsonify({json_list: []}), 200
+        return jsonify({'json_list': []}), 200
 
     result = NetworkUserLog.query.filter_by(network_id=id_network).order_by(NetworkUserLog.created_on.desc())
     return jsonify(json_list=[i.serialize for i in result.all()])
@@ -522,6 +536,14 @@ def delete_network(db: Graph):
     dataDict = json.loads(request.data)
     current_user = get_jwt_identity()
     Network.delete_by_user(db, current_user, dataDict["id"])
+    return jsonify({"sucess": True, "message":"Rede removida."}), 202
+
+@account_controller.route("/course/delete",  methods=['POST'])
+@jwt_required
+def delete_course(db: Graph):
+    dataDict = json.loads(request.data)
+    current_user = get_jwt_identity()
+    Course.delete_by_user(db, current_user, dataDict["id"])
     return jsonify({"sucess": True, "message":"Rede removida."}), 202
 
 @account_controller.route('/users/activity/subnetwork/get/id', methods=['GET'])
@@ -593,23 +615,31 @@ def generateUUID():
 def create_Network(db: Graph):
     current_user = get_jwt_identity()
     dataDict = json.loads(request.data)
-    usuario = User.fetch_by_email(db, current_user )
-    if not usuario:
-        return jsonify({"error": "`email` são obrigatórios."}), 400
+    
+    atividade = make_network(db, current_user)
+    
+    return jsonify({"sucess": "activity created.", "name":atividade.id})
+
+def make_network(db, current_user, course_name='', url_moodle=None, token=None, course_id=None):
+    user = User.fetch_by_email(db, current_user )
 
     atividade = Network()
     atividade.id = generateUUID()
     #getQuantity
     qt = Network.getQuantity(db, current_user)
     num = str(qt) if qt != 0 else ""
-    atividade.name = "Sem título "+num
+    atividade.name = "Sem título "+num if len(course_name)==0 else course_name
     atividade.all_data = "[]"
+    if url_moodle:
+        atividade.token = token
+        atividade.url = url_moodle
+        atividade.course_id = course_id
     atividade.created_at = getCurrentDate()
     atividade.updated_at = getCurrentDate()
-    atividade.attachment.add(usuario)
+    atividade.attachment.add(user)
     db.push(atividade)
-    return jsonify({"sucess": "activity created.", "name":atividade.id})
-
+    
+    return atividade
 
 @account_controller.route('/users/register', methods=['POST'])
 def register(db: Graph):
@@ -637,18 +667,22 @@ def register(db: Graph):
 
 @account_controller.route('/users/login', methods=['POST','GET'])
 def login(db: Graph):
-    dataDict = json.loads(request.data)
     
-    usuario = User.fetch_by_email_and_password(db, email=dataDict['email'],password=getHash512(dataDict['password']))
-    if not usuario:
-        return jsonify({"error": "Email ou senha inválido."}), 400
+    try:
+        dataDict = json.loads(request.data)
+        usuario = User.fetch_by_email_and_password(db, email=dataDict['email'],password=getHash512(dataDict['password']))
+        if not usuario:
+            return jsonify({"error": "Email ou senha inválido."}), 400
 
-    user = UserObject(username=usuario.email, role='Admin', permissions=['foo', 'bar'])
+        user = UserObject(username=usuario.email, role='Admin', permissions=['foo', 'bar'])
 
-    expires = datetime.timedelta(minutes=120)
-    access_token = create_access_token(identity=user, expires_delta=expires)
-    ret = {'token': access_token, 'username': usuario.email}
-    return jsonify(ret), 200
+        expires = datetime.timedelta(minutes=120)
+        access_token = create_access_token(identity=user, expires_delta=expires)
+        ret = {'token': access_token, 'username': usuario.email}
+        return jsonify(ret), 200
+
+    except Exception as e:
+        print( str(e) , file=sys.stderr)
 
 @jwt.user_identity_loader
 def user_identity_lookup(user):

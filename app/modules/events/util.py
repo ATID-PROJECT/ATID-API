@@ -23,7 +23,7 @@ def userHasGroup(url_base, token, userid, groupid):
 
 def getNextActivity(db, url_host, id_course, current_id):
     
-    target_activitys = []
+    target_modules = []
     target_transictions = []
 
     network = db.run( f"MATCH (network:Network{{url:'{url_host}'}})-[r2]-(c:Course{{id:{id_course}}}) return network").data()[0]['network']
@@ -39,9 +39,9 @@ def getNextActivity(db, url_host, id_course, current_id):
     for transiction in target_transictions:
         for item in all_data:
             if 'source' in item and item['source'] == transiction:
-                target_activitys.append( item['target'] )
+                target_modules.append( item['target'] )
     
-    return [target_transictions,target_activitys]
+    return [target_transictions,target_modules]
 
 def getInstanceOfActivityUUID(db, url_base, id_course, uuid_activity, type_activity):
 

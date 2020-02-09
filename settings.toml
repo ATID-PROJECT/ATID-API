@@ -8,7 +8,7 @@ MAIL_USE_SSL = false
 EMAIL_SENDER = "flask_start@teste.com"
 
 TYPE_DATABASE = ''
-USER_DATABASE = 'root'
+USER_DATABASE = 'neo4j'
 PASS_DATABASE = 'admin'
 NAME_DATABASE = ''
 
@@ -17,6 +17,7 @@ HOST_URL = 'localhost'
 LHOST = 'localhost'
 LPORT = '3306'
 ENABLE_SEND_EMAIL = true
+SQLALCHEMY_DATABASE_URI = 'sqlite:///C:\Users\mateu\Documents\ATID-API\app.db'
 
 URL_MOODLE = "webservice/rest/server.php?wstoken={0}&wsfunction={1}&moodlewsrestformat=json"
 

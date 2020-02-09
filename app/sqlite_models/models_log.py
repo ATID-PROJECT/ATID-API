@@ -10,6 +10,8 @@ class NetworkUserLog(CustomBase):
     user_id = Column(Integer)
     network_id = Column(Text)
     description = Column(Text)
+    created_on = Column(DateTime)
+    updated_on = Column(DateTime)
 
     @property
     def serialize(self):

@@ -17,9 +17,9 @@ def UserToStart(db, url_host, id_course, id_user):
         for item in all_data:
             if( 'id' in item and item['type'].lower() == "custom:start"):
                 
-                target_transictions,target_activitys = getNextActivity(db, url_host, id_course, item['id'])
+                target_transictions,target_modules = getNextActivity(db, url_host, id_course, item['id'])
 
-                target_item = getNetworkByID(db, url_host, id_course, target_activitys[0])
+                target_item = getNetworkByID(db, url_host, id_course, target_modules[0])
                 
                 if not('suggestion_uuid' in target_item):
                     abort(400, {'message': 'A rede possuí erros estruturais.'})

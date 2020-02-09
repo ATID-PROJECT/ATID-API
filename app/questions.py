@@ -10,17 +10,25 @@ from flask import Flask, jsonify, request, make_response
 import random
 import string
 from py2neo import Relationship, Node
+from .modules.controller import create_course
 
-from app.general.controller import createQuestion 
+from app.modules.controller import createQuestion 
 #sys.path.append("..")
 from app.JWTManager import jwt
 import uuid 
 import sys
+import os
 from flask_restful import Resource
 
 import urllib.request, json 
 from app.models import *
-from .general.entitys import *
+
+from .modules import *
+from .modules.activitys import *
+
+from .modules.controller import createGroup
+
+from .modules.general.course import getCourseByName, getUsersByCourse
 
 from injector import CallableProvider, inject
 
@@ -66,6 +74,88 @@ def resources_get(db: Graph):
     questions = db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_RESOURCE]-(resource{uuid: '%s'}) return resource" % (current_user, network_id, uuid)).data()
     return jsonify(questions)
 
+from .modules.controller import make_network
+import re
+
+@start_controller.route('/network/import', methods=['POST'])
+@jwt_required
+def import_network(db: Graph):
+    current_user = get_jwt_identity()
+    dataDict = request.get_json(force=True)
+
+    url_base = dataDict['url_base']
+    token = dataDict['token']
+    course_name = dataDict['course_name']
+
+    result = getCourseByName(url_base, token, course_name)
+    print(result, file=sys.stderr)
+    try:
+
+        if('courses' in result and len(result['courses']) > 0 ):
+            #criar rede
+            course_id = result['courses'][0]['id']
+            
+            result_network = make_network(db, current_user, course_name, url_base, token, course_id)
+
+            all_chats = getChatByCourse(url_base, token, course_id)
+            all_databases = getDatabaseByCourse(url_base, token, course_id)
+            all_lti = getltiByCourse(url_base, token, course_id)
+            all_forums = getForumsByCourse(url_base, token, course_id)
+            
+            all_glossaries = getGlossariesByCourse(url_base, token, course_id)
+            all_quizzes = getQuizzestByCourse(url_base, token, course_id)
+            all_wikis = getWikisByCourse(url_base, token, course_id)
+
+            #importar atividades
+            for chat in all_chats['chats']:
+                
+                description = re.sub('<[^<]+?>', '', chat['intro'])
+                create_chat( db, current_user, chat['name'], description, result_network.id,\
+                    chat['id'], chat['course'], url_base, token )
+
+            for data in all_databases['databases']:
+                description = re.sub('<[^<]+?>', '', data['intro'])
+                create_database( db, current_user, data['name'], description, result_network.id,\
+                    data['id'], data['course'], url_base, token )
+
+            for lti in all_lti['ltis']:
+                description = re.sub('<[^<]+?>', '', lti['intro'])
+                create_lti( db, current_user, lti['name'], description, result_network.id,\
+                    lti['id'], lti['course'], url_base, token )
+
+            for forum in all_forums:
+                description = re.sub('<[^<]+?>', '', forum['intro'])
+                create_forum( db, current_user, forum['name'], description, result_network.id,\
+                    forum['id'], forum['course'], url_base, token )
+
+            for glossary in all_glossaries['glossaries']:
+                description = re.sub('<[^<]+?>', '', glossary['intro'])
+                create_glossary( db, current_user, glossary['name'], description, result_network.id,\
+                    glossary['id'], glossary['course'], url_base, token )
+
+            for quiz in all_quizzes['quizzes']:
+                description = re.sub('<[^<]+?>', '', quiz['intro'])
+                create_quiz( db, current_user, quiz['name'], description, result_network.id,\
+                    quiz['id'], quiz['course'], url_base, token )
+
+            for wiki in all_wikis['wikis']:
+                description = re.sub('<[^<]+?>', '', wiki['intro'])
+                create_wiki( db, current_user, wiki['name'], description, result_network.id,\
+                    wiki['id'], wiki['course'], url_base, token )
+            
+            create_course(db, current_user, result_network.id, course_name, course_name)
+
+            return jsonify({'message': 'Rede importada'}), 200
+
+        else:
+            return jsonify({}), 404
+    except Exception as e:
+        print('error===========================', file=sys.stderr)
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
+        return 'error', 400
+
 @start_controller.route('/courses/getall', methods=['GET'])
 @jwt_required
 def courses_getall(db: Graph):
@@ -77,6 +167,7 @@ def courses_getall(db: Graph):
         set course.label = labels(course)[0]\
         return course.id as id, course.fullname as fullname, course.shortname as shortname, course.network_id as network_id, course.created_at as created_at \
         ORDER BY course.created_at DESC SKIP %s LIMIT %s" % (current_user, page*size, size)).data()
+    
     return jsonify(courses)
 
 @start_controller.route('/courses/get', methods=['GET'])
@@ -91,6 +182,96 @@ def courses_get_by_id(db: Graph):
         " % (current_user, course_id)).data()
     return jsonify(courses)
 
+from app.modules.general.status import getStatus, getGradeStatus
+from app.views import get_enrolled
+from datetime import datetime
+
+def getDateList():
+    month = datetime.now().month
+    year = datetime.now().year
+    array_result = [ f"{year}-{month}-01" ]
+    
+    for i in range(1,9):
+        month = month - 1
+        if month == 0:
+            month = 12
+            year = year - 1
+        array_result.append( f"{year}-{month}-01" )
+    
+    return array_result
+
+@start_controller.route('/status/get', methods=['GET'])
+@jwt_required
+def get_status(db: Graph):
+    current_user = get_jwt_identity()
+    network_id = request.args.get("network_id")
+    course_id = request.args.get("course_id")
+    
+    network = db.run("MATCH (p:User{email:'%s'})-[r1]-(net:Network{id:'%s'}) return net" % (current_user, network_id)).data()[0]['net']
+    
+    users = get_enrolled(db, current_user, network_id, course_id)
+    users = ",".join( [str(user['id']) for user in users] )
+    date_list = ",".join( getDateList() )
+
+    result = getStatus( network['url'], network['token'], course_id, users, date_list )
+    
+    return jsonify(result)
+
+@start_controller.route('/grade_status/get', methods=['GET'])
+@jwt_required
+def get_grade_status(db: Graph):
+    current_user = get_jwt_identity()
+    network_id = request.args.get("network_id")
+    course_id = request.args.get("course_id")
+    
+    network = db.run("MATCH (p:User{email:'%s'})-[r1]-(net:Network{id:'%s'}) return net" % (current_user, network_id)).data()[0]['net']
+    
+    users = get_enrolled(db, current_user, network_id, course_id)
+    users = ",".join( [str(user['id']) for user in users] )
+
+    result = getGradeStatus( network['url'], network['token'], course_id, users )
+
+    return jsonify(result)
+
+@start_controller.route('/general/status', methods=['GET'])
+@jwt_required
+def general_account_status(db: Graph):
+    try:
+        current_user = get_jwt_identity()
+        activitys_query = "MATCH (p:User{email:'%s'})-[r]-(activity)-[r2]-(course:Course)-[r3:HAS_INSTANCE]-(i) return COUNT(DISTINCT i) as total" % current_user
+        activitys_result = db.run(activitys_query).data()
+        networks_result = Network.get_length(db, current_user)
+        courses_result = Course.get_length(db, current_user)
+
+        chat_query = "MATCH (p:User{email:'%s'})-[r]-(activity)-[r2]-(course:Course)-[r3:HAS_INSTANCE]-(i:ChatInstance) return COUNT(DISTINCT i) as total" % current_user
+        quiz_query = "MATCH (p:User{email:'%s'})-[r]-(activity)-[r2]-(course:Course)-[r3:HAS_INSTANCE]-(i:QuizInstance) return COUNT(DISTINCT i) as total" % current_user
+        choice_query = "MATCH (p:User{email:'%s'})-[r]-(activity)-[r2]-(course:Course)-[r3:HAS_INSTANCE]-(i:ChoiceInstance) return COUNT(DISTINCT i) as total" % current_user
+        forum_query = "MATCH (p:User{email:'%s'})-[r]-(activity)-[r2]-(course:Course)-[r3:HAS_INSTANCE]-(i:ForumInstance) return COUNT(DISTINCT i) as total" % current_user
+
+        list_courses = db.run("MATCH (p:User{email:'%s'})-[r]-(net:Network)-[r2]-(course:Course) WHERE net.token <> '' return net.id, course.id" % current_user).data()
+        total_users = 0
+
+        for item in list_courses:
+            total_users += len( get_enrolled(db, current_user, item['net.id'], item['course.id']) )
+        
+        chat_result = db.run(chat_query).data()
+        quiz_result = db.run(quiz_query).data()
+        choice_result = db.run(choice_query).data()
+        forum_result = db.run(forum_query).data()
+
+        return jsonify({
+            'networks': networks_result[0]['total'],
+            'courses': courses_result[0]['total'],
+            'activitys': activitys_result[0]['total'],
+            'users': total_users,
+            'chat': chat_result[0]['total'],
+            'quiz': quiz_result[0]['total'],
+            'choice': choice_result[0]['total'],
+            'forum': forum_result[0]['total'],
+        })
+
+    except Exception as e:
+        print( str(e), file=sys.stderr )
 
 class ExternToolResource(Resource):
     
@@ -216,51 +397,63 @@ class ForumResource(Resource):
         forum.uuid = uuid
         forum.name = dataDict["name"]
         forum.description = dataDict["description"]
+        forum.label = "forum"
     
         self.db.push(forum)
 
         Network.addForum(self.db, current_user, dataDict["network_id"], uuid)
         createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
+        
+        forum = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(forum:Forum{uuid:'%s'}) return forum" % (current_user, dataDict["network_id"], uuid)).data()[0]['forum']
+        courses_already_created = self.db.run("MATCH (p:User{email:'%s'})-[r]-(net:Network{id: '%s'})-[r2]-(course:Course) return course.id as id, net.url as url, net.token as token" % (current_user, dataDict["network_id"]) ).data()
+        for r in courses_already_created:
+            createQuestion(forum, r['url'], r['token'], r['id'], self.db, current_user)
 
         return jsonify({"sucess": True})
 
     @jwt_required
     def put(self):
-        dataDict = request.get_json(force=True)
-        current_user = get_jwt_identity()
+        try:
+            dataDict = request.get_json(force=True)
+            current_user = get_jwt_identity()
 
-        network_id = dataDict["network_id"]
-        uuid = dataDict["uuid"]
-        name = dataDict["name"]
-        description = dataDict["description"]
+            network_id = dataDict["network_id"]
+            uuid = dataDict["uuid"]
+            name = dataDict["name"]
+            description = dataDict["description"]
 
-        activities = Network.getActivity(self.db, current_user, uuid, 'Forum')
+            activities = Network.getActivity(self.db, current_user, uuid, 'Forum')
 
-        if len(activities) > 0:
-            activity = dict(activities[0]['activity'])
+            if len(activities) > 0:
+                activity = dict(activities[0]['activity'])
 
-            query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(forum:Forum{{uuid:'{uuid}'}}) \
-            SET forum.name = '{name}',\
-            forum.description = '{description}'\
-            return forum"
+                query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(forum:Forum{{uuid:'{uuid}'}}) \
+                SET forum.name = '{name}',\
+                forum.description = '{description}'\
+                return forum"
 
-            self.db.run(query).data()
+                self.db.run(query).data()
 
-            network = self.db.run( f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(network:Network{{id:'{network_id}'}}) return network").data()[0]['network']
-            
-            all_instances = self.db.run( f"MATCH (instance:ForumInstance{{id_forum: '{uuid}'}}) return instance" ).data()
-            
-            #atualizar todas 'turmas' já criadas
-            for instance in all_instances:
-                result = instance['instance']
-                updateForum(network['url'], network['token'], result['id_instance'], name, description)
+                network = self.db.run( f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(network:Network{{id:'{network_id}'}}) return network").data()[0]['network']
+                
+                all_instances = self.db.run( f"MATCH (instance:ForumInstance{{id_forum: '{uuid}'}}) return instance" ).data()
+                
+                #atualizar todas 'turmas' já criadas
+                for instance in all_instances:
+                    result = instance['instance']
+                    updateForum(network['url'], network['token'], result['id_instance'], name, description)
 
-            if activity['name'] == name:
-                createLog(current_user, dataDict["network_id"], "Atualizou a atividade: "+str(dataDict["name"]))
-            else:
-                createLog(current_user, dataDict["network_id"], f"Atualizou a atividade {activity['name']} para {name}")
+                if activity['name'] == name:
+                    createLog(current_user, dataDict["network_id"], "Atualizou a atividade: "+str(dataDict["name"]))
+                else:
+                    createLog(current_user, dataDict["network_id"], f"Atualizou a atividade {activity['name']} para {name}")
 
-            return jsonify({"updated": True})
+                return jsonify({"updated": True})
+        except Exception as e:
+            print('??????????????????????????????', file=sys.stderr)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
 
     @jwt_required
     def delete(self):
@@ -417,26 +610,26 @@ class SearchResource(Resource):
 
         name = dataDict["name"]
         description = dataDict["description"]
-        search.allow_responses_from = dataDict["allow_responses_from"]
-        search.responses_from = dataDict["responses_from"]
+        allow_responses_from = dataDict["allow_responses_from"]
+        responses_from = dataDict["responses_from"]
 
-        search.allow_responses_to = dataDict["allow_responses_to"]
-        search.responses_to = dataDict["responses_to"]
+        allow_responses_to = dataDict["allow_responses_to"]
+        responses_to = dataDict["responses_to"]
 
-        search.type_username_recorded = dataDict["type_username_recorded"]
-        search.allow_mult_send = dataDict["allow_mult_send"]
-        search.allow_notice_send = dataDict["allow_notice_send"]
-        search.allow_automatic_numbering = dataDict["allow_automatic_numbering"]
+        type_username_recorded = dataDict["type_username_recorded"]
+        allow_mult_send = dataDict["allow_mult_send"]
+        allow_notice_send = dataDict["allow_notice_send"]
+        allow_automatic_numbering = dataDict["allow_automatic_numbering"]
 
-        search.show_analyze = dataDict["show_analyze"]
-        search.conclusion_message = dataDict["conclusion_message"]
-        search.next_link = dataDict["next_link"]
+        show_analyze = dataDict["show_analyze"]
+        conclusion_message = dataDict["conclusion_message"]
+        next_link = dataDict["next_link"]
 
-        search.conclusion_type = dataDict["conclusion_type"]
-        search.view_required = dataDict["view_required"]
-        search.finished_sent = dataDict["finished_sent"]
-        search.allow_conclusion_date = dataDict["allow_conclusion_date"]
-        search.conclusion_date = dataDict["conclusion_date"]
+        conclusion_type = dataDict["conclusion_type"]
+        view_required = dataDict["view_required"]
+        finished_sent = dataDict["finished_sent"]
+        allow_conclusion_date = dataDict["allow_conclusion_date"]
+        conclusion_date = dataDict["conclusion_date"]
 
         query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(search:Search{{uuid:'{uuid}'}}) \
             SET search.name = '{name}',\
@@ -781,6 +974,7 @@ class QuizResource(Resource):
         quiz = Quiz()
         quiz.uuid = uuid
         quiz.name = dataDict["name"]
+        quiz.label = "quiz"
         quiz.description = dataDict["description"]
 
         self.db.push(quiz)
@@ -788,43 +982,54 @@ class QuizResource(Resource):
         Network.addQuiz(self.db, current_user, dataDict["network_id"], uuid)
         createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
 
+        quiz = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(quiz:Quiz{uuid:'%s'}) return quiz" % (current_user, dataDict["network_id"], uuid)).data()[0]['quiz']
+        courses_already_created = self.db.run("MATCH (p:User{email:'%s'})-[r]-(net:Network{id: '%s'})-[r2]-(course:Course) return course.id as id, net.url as url, net.token as token" % (current_user, dataDict["network_id"]) ).data()
+        for r in courses_already_created:
+            createQuestion(quiz, r['url'], r['token'], r['id'], self.db, current_user)
+
         return jsonify({"sucess": True})
 
     @jwt_required
     def put(self):
-        dataDict = request.get_json(force=True)
-        current_user = get_jwt_identity()
+        try:
+            dataDict = request.get_json(force=True)
+            current_user = get_jwt_identity()
 
-        network_id = dataDict["network_id"]
-        uuid = dataDict["uuid"]
-        name = dataDict["name"]
-        description = dataDict["description"]
-        
-        activities = Network.getActivity(self.db, current_user, uuid, 'Quiz')
-
-        if len(activities) > 0:
-            activity = dict(activities[0]['activity'])
-
-            query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(quiz:Quiz{{uuid:'{uuid}'}}) \
-             SET quiz.name = '{name}',\
-             quiz.description = '{description}'\
-             return quiz"
-
-            self.db.run(query).data()
-
-            network = self.db.run( f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(network:Network{{id:'{network_id}'}}) return network").data()[0]['network']
+            network_id = dataDict["network_id"]
+            uuid = dataDict["uuid"]
+            name = dataDict["name"]
+            description = dataDict["description"]
             
-            all_instances = self.db.run( f"MATCH (instance:QuizInstance{{id_quiz: '{uuid}'}}) return instance" ).data()
-            
-            #atualizar todas 'turmas' já criadas
-            for instance in all_instances:
-                result = instance['instance']
-                updateQuiz(network['url'], network['token'], result['id_instance'], name, description )
+            activities = Network.getActivity(self.db, current_user, uuid, 'Quiz')
 
-            if activity['name'] == name:
-                createLog(current_user, dataDict["network_id"], "Atualizou a atividade: "+str(dataDict["name"]))
-            else:
-                createLog(current_user, dataDict["network_id"], f"Atualizou a atividade {activity['name']} para {name}")
+            if len(activities) > 0:
+                activity = dict(activities[0]['activity'])
+
+                query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(quiz:Quiz{{uuid:'{uuid}'}}) \
+                SET quiz.name = '{name}',\
+                quiz.description = '{description}'\
+                return quiz"
+
+                self.db.run(query).data()
+
+                network = self.db.run( f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(network:Network{{id:'{network_id}'}}) return network").data()[0]['network']
+                
+                all_instances = self.db.run( f"MATCH (instance:QuizInstance{{id_quiz: '{uuid}'}}) return instance" ).data()
+                
+                #atualizar todas 'turmas' já criadas
+                for instance in all_instances:
+                    result = instance['instance']
+                    updateQuiz(network['url'], network['token'], result['id_instance'], name, description )
+
+                if activity['name'] == name:
+                    createLog(current_user, dataDict["network_id"], "Atualizou a atividade: "+str(dataDict["name"]))
+                else:
+                    createLog(current_user, dataDict["network_id"], f"Atualizou a atividade {activity['name']} para {name}")
+        except Exception as e:
+            print('****************************', file=sys.stderr)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
 
         return jsonify({"updated": True})
 
@@ -840,6 +1045,205 @@ class QuizResource(Resource):
         self.db.run(query)
 
         return jsonify({"Deleted": True})
+
+def create_chat( db, current_user, chat_name, chat_description, chat_network_id,\
+    id_chat=None, course_id=None, url_base=None, token=None ):
+    uuid = generateUUID()
+
+    chat = Chat()
+    chat.uuid = uuid
+    chat.label = "chat"
+    chat.name = chat_name
+    chat.description = chat_description
+    db.push(chat)
+
+    Network.addChat(db, current_user, chat_network_id, uuid)
+
+    if id_chat != None:
+        group = createGroup( url_base, token, course_id, str(chat_name)+str( generateUUID() ), "Caminho de aprendizado" )[0]
+
+        chat_instance = ChatInstance()
+        chat_instance.uuid = generateUUID()
+        chat_instance.id_chat = uuid
+        chat_instance.id_group = group['id']
+        chat_instance.id_instance = id_chat
+
+        db.push( chat_instance )
+
+        Course.addChat(db, current_user, course_id, chat_instance.uuid)
+
+        setChatGroup(url_base, token, id_chat, course_id, group['id'])
+
+    return uuid
+
+def create_glossary( db, current_user, glossary_name, glossary_description, glossary_network_id,\
+    id_glossary=None, course_id=None, url_base=None, token=None ):
+    uuid = generateUUID()
+
+    glossary = Glossario()
+    glossary.uuid = uuid
+    glossary.label = "glossary"
+    glossary.name = glossary_name
+    glossary.description = glossary_description
+    db.push(glossary)
+
+    Network.addGlossario(db, current_user, glossary_network_id, uuid)
+
+    if id_glossary != None:
+        group = createGroup( url_base, token, course_id, str(glossary_name)+str( generateUUID() ), "Caminho de aprendizado" )[0]
+
+        glossary_instance = GlossarioInstance()
+        glossary_instance.uuid = generateUUID()
+        glossary_instance.id_glossary = uuid
+        glossary_instance.id_group = group['id']
+        glossary_instance.id_instance = id_glossary
+
+        db.push( glossary_instance )
+
+        Course.addGlossario(db, current_user, course_id, glossary_instance.uuid)
+
+        setGlossaryGroup(url_base, token, id_glossary, course_id, group['id'])
+
+def create_quiz( db, current_user, quiz_name, quiz_description, quiz_network_id,\
+    id_quiz=None, course_id=None, url_base=None, token=None ):
+    uuid = generateUUID()
+
+    quiz = Quiz()
+    quiz.uuid = uuid
+    quiz.label = "quiz"
+    quiz.name = quiz_name
+    quiz.description = quiz_description
+    db.push(quiz)
+
+    Network.addQuiz(db, current_user, quiz_network_id, uuid)
+
+    if id_quiz != None:
+        group = createGroup( url_base, token, course_id, str(quiz_name)+str( generateUUID() ), "Caminho de aprendizado" )[0]
+
+        quiz_instance = QuizInstance()
+        quiz_instance.uuid = generateUUID()
+        quiz_instance.id_quiz = uuid
+        quiz_instance.id_group = group['id']
+        quiz_instance.id_instance = id_quiz
+
+        db.push( quiz_instance )
+
+        Course.addQuiz(db, current_user, course_id, quiz_instance.uuid)
+
+        setQuizGroup(url_base, token, id_quiz, course_id, group['id'])
+
+def create_forum( db, current_user, forum_name, forum_description, forum_network_id,\
+    id_forum=None, course_id=None, url_base=None, token=None ):
+    uuid = generateUUID()
+
+    forum = Forum()
+    forum.uuid = uuid
+    forum.label = "forum"
+    forum.name = forum_name
+    forum.description = forum_description
+    db.push(forum)
+
+    Network.addForum(db, current_user, forum_network_id, uuid)
+
+    if id_forum != None:
+        group = createGroup( url_base, token, course_id, str(forum_name)+str( generateUUID() ), "Caminho de aprendizado" )[0]
+
+        forum_instance = ForumInstance()
+        forum_instance.uuid = generateUUID()
+        forum_instance.id_forum = uuid
+        forum_instance.id_group = group['id']
+        forum_instance.id_instance = id_forum
+
+        db.push( forum_instance )
+
+        Course.addForum(db, current_user, course_id, forum_instance.uuid)
+
+        setForumGroup(url_base, token, id_forum, course_id, group['id'])
+
+def create_lti( db, current_user, lti_name, lti_description, lti_network_id,\
+    id_lti=None, course_id=None, url_base=None, token=None ):
+    uuid = generateUUID()
+
+    lti = ExternTool()
+    lti.uuid = uuid
+    lti.label = "lti"
+    lti.name = lti_name
+    lti.description = lti_description
+    db.push(lti)
+
+    Network.addExternTool(db, current_user, lti_network_id, uuid)
+
+    if id_lti != None:
+        group = createGroup( url_base, token, course_id, str(lti_name)+str( generateUUID() ), "Caminho de aprendizado" )[0]
+
+        lti_instance = ExternToolInstance()
+        lti_instance.uuid = generateUUID()
+        lti_instance.id_lti = uuid
+        lti_instance.id_group = group['id']
+        lti_instance.id_instance = id_lti
+
+        db.push( lti_instance )
+
+        Course.addExternTool(db, current_user, course_id, lti_instance.uuid)
+
+        setLTIGroup(url_base, token, id_lti, course_id, group['id'])
+
+def create_database( db, current_user, data_name, data_description, data_network_id,\
+    id_data=None, course_id=None, url_base=None, token=None ):
+    uuid = generateUUID()
+
+    data = Database()
+    data.uuid = uuid
+    data.label = "data"
+    data.name = data_name
+    data.description = data_description
+    db.push(data)
+
+    Network.addDatabase(db, current_user, data_network_id, uuid)
+
+    if id_data != None:
+        group = createGroup( url_base, token, course_id, str(data_name)+str( generateUUID() ), "Caminho de aprendizado" )[0]
+
+        data_instance = DatabaseInstance()
+        data_instance.uuid = generateUUID()
+        data_instance.id_database = uuid
+        data_instance.id_group = group['id']
+        data_instance.id_instance = id_data
+
+        db.push( data_instance )
+
+        Course.addDatabase(db, current_user, course_id, data_instance.uuid)
+
+        setDatabaseGroup(url_base, token, id_data, course_id, group['id'])
+
+def create_wiki( db, current_user, wiki_name, wiki_description, wiki_network_id,\
+    id_wiki=None, course_id=None, url_base=None, token=None ):
+    uuid = generateUUID()
+
+    wiki = Wiki()
+    wiki.uuid = uuid
+    wiki.label = "wiki"
+    wiki.name = wiki_name
+    wiki.description = wiki_description
+    db.push(wiki)
+
+    Network.addWiki(db, current_user, wiki_network_id, uuid)
+
+    if id_wiki != None:
+        group = createGroup( url_base, token, course_id, str(wiki_name)+str( generateUUID() ), "Caminho de aprendizado" )[0]
+
+        wiki_instance = WikiInstance()
+        wiki_instance.uuid = generateUUID()
+        wiki_instance.id_wiki = uuid
+        wiki_instance.id_group = group['id']
+        wiki_instance.id_instance = id_wiki
+
+        db.push( wiki_instance )
+
+        Course.addWiki(db, current_user, course_id, wiki_instance.uuid)
+
+        setWikiGroup(url_base, token, id_wiki, course_id, group['id'])
+    
 
 class ChatResource(Resource):
     
@@ -857,24 +1261,19 @@ class ChatResource(Resource):
 
     @jwt_required
     def post(self):
+
         dataDict = request.get_json(force=True)
         current_user = get_jwt_identity()
-        uuid = generateUUID()
 
-        chat = Chat()
-        chat.uuid = uuid
-        chat.label = "chat"
-        chat.name = dataDict["name"]
-        chat.description = dataDict["description"]
-        self.db.push(chat)
-
-        Network.addChat(self.db, current_user, dataDict["network_id"], uuid)
-
+        uuid = create_chat( self.db, current_user, dataDict["name"], dataDict["description"], dataDict["network_id"])
+             
         network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(net:Network{id:'%s'}) return net" % (current_user, dataDict["network_id"])).data()[0]['net']
         chat = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(chat:Chat{uuid:'%s'}) return chat" % (current_user, dataDict["network_id"], uuid)).data()[0]['chat']
 
         if network and network['url'] != None:
+            
             all_courses = self.db.run("MATCH (u:User{email:'%s'})-[r]-(a:Network{id:'%s'})-[:HAS_COURSE]-(course) return course" % (current_user, dataDict["network_id"])).data()
+            
             for course in all_courses:
                 course = course["course"]
                 createQuestion( chat, network['url'] , network['token'], int(course['id']), self.db, current_user)
@@ -883,35 +1282,41 @@ class ChatResource(Resource):
 
         return jsonify({"sucess": True})
 
+
     @jwt_required
     def put(self):
-        dataDict = request.get_json(force=True)
-        current_user = get_jwt_identity()
-        network_id = dataDict["network_id"]
-        uuid = dataDict["uuid"]
+        try:
+            dataDict = request.get_json(force=True)
+            current_user = get_jwt_identity()
+            network_id = dataDict["network_id"]
+            uuid = dataDict["uuid"]
 
-        name = dataDict["name"]
-        description = dataDict["description"]
+            name = dataDict["name"]
+            description = dataDict["description"]
 
-        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(chat:Chat{{uuid:'{uuid}'}}) \
-            SET chat.name = '{name}',\
-            chat.description = '{description}' return chat"
+            query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(a:Network{{id:'{network_id}'}})-[r:HAS_QUESTIONS]-(chat:Chat{{uuid:'{uuid}'}}) \
+                SET chat.name = '{name}',\
+                chat.description = '{description}' return chat"
 
-        self.db.run(query).data()
+            self.db.run(query).data()
 
-        chat = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(chat:Chat{uuid:'%s'}) return chat" % (current_user, network_id, uuid)).data()        
-        network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
+            chat = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(chat:Chat{uuid:'%s'}) return chat" % (current_user, network_id, uuid)).data()        
+            network = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(network:Network{id:'%s'}) return network" % (current_user, network_id)).data()[0]['network']
 
-        uuid_chat = chat[0]['chat']['uuid']
-        
-        all_instances = self.db.run("MATCH (instance:ChatInstance{id_chat: '%s'}) return instance" % (uuid_chat)).data()
+            uuid_chat = chat[0]['chat']['uuid']
+            
+            all_instances = self.db.run("MATCH (instance:ChatInstance{id_chat: '%s'}) return instance" % (uuid_chat)).data()
 
-        #atualizar todas 'turmas' já criadas
-        for instance in all_instances:
-            result = instance['instance']
-            updateChat(network['url'], network['token'], result['id_instance'], name, description)
+            #atualizar todas 'turmas' já criadas
+            for instance in all_instances:
+                result = instance['instance']
+                updateChat(network['url'], network['token'], result['id_instance'], name, description)
 
-        return jsonify({"updated": True})
+            return jsonify({"updated": True})
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
 
     @jwt_required
     def delete(self):
@@ -1156,6 +1561,11 @@ class DatabaseResource(Resource):
         Network.addDatabase(self.db, current_user, dataDict["network_id"], uuid)
         createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
 
+        database = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(database:Database{uuid:'%s'}) return database" % (current_user, dataDict["network_id"], uuid)).data()[0]['database']
+        courses_already_created = self.db.run("MATCH (p:User{email:'%s'})-[r]-(net:Network{id: '%s'})-[r2]-(course:Course) return course.id as id, net.url as url, net.token as token" % (current_user, dataDict["network_id"]) ).data()
+        for r in courses_already_created:
+            createQuestion(database, r['url'], r['token'], r['id'], self.db, current_user)
+
         return jsonify({"sucess": True}) 
 
 
@@ -1239,6 +1649,11 @@ class ChoiceResource(Resource):
 
         Network.addChoice(self.db, current_user, dataDict["network_id"], uuid)
         createLog(current_user, dataDict["network_id"], "Criou uma nova atividade: "+str(dataDict["name"]))
+
+        choice = self.db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_QUESTIONS]-(choice:Choice{uuid:'%s'}) return choice" % (current_user, dataDict["network_id"], uuid)).data()[0]['choice']
+        courses_already_created = self.db.run("MATCH (p:User{email:'%s'})-[r]-(net:Network{id: '%s'})-[r2]-(course:Course) return course.id as id, net.url as url, net.token as token" % (current_user, dataDict["network_id"]) ).data()
+        for r in courses_already_created:
+            createQuestion(choice, r['url'], r['token'], r['id'], self.db, current_user)
 
         return jsonify({"sucess": True})
 

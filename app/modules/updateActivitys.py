@@ -1,5 +1,5 @@
 import sys
-from .entitys import *
+from . import *
 
 def updateFromMoodle( db, type_item, url_moodle, course_id, item_id ):
     
@@ -18,7 +18,8 @@ def updateFromMoodle( db, type_item, url_moodle, course_id, item_id ):
     elif type_item == "quiz":
         upQuiz( db, url_moodle, course_id, item_id )
     elif type_item == "choice":
-        upChoice( db, url_moodle, course_id, item_id )
+        #upChoice( db, url_moodle, course_id, item_id )
+        pass
 
 def upQuiz( db, url_moodle, course_id, item_id ):
 

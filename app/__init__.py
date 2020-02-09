@@ -1,7 +1,7 @@
 from flask import Flask
 
 from .views import start_controller
-from .general import account_controller
+from .modules import account_controller
 
 from flask_migrate import Migrate
 from flask_login import LoginManager
@@ -20,7 +20,6 @@ import os
 from flask import request, jsonify
 from flask_migrate import Migrate
 
-from .manage import default_config_app
 from .JWTManager import jwt
 
 from flask_cors import CORS
@@ -131,7 +130,6 @@ def create_app():
     def all_exception_handler(error):
         return jsonify({"message": "Ocorreu um problema.", "status": 500}), 500
 
-    default_config_app(app)
     return app
 
 def configureDatabase(app):

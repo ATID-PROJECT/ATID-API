@@ -81,6 +81,9 @@ class Course(BaseModel):
     shortname = Property()
     network_id = Property()
 
+    def get_length(graph, user):
+        return graph.run("MATCH (p:User{email:'%s'})-[r]-(activity)-[r2]-(course:Course) return COUNT(DISTINCT course) as total" % user).data()
+
     def fetch_all_by_user(graph, email, offset, limit):
         return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Course) return activity ORDER BY id DESC SKIP %s LIMIT %s" % (email, offset, limit)).data()
 
@@ -89,7 +92,6 @@ class Course(BaseModel):
 
     def addChat(graph, user, course_id, chat_id):
         oi = "MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:%d}), (chat:ChatInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(chat)" % (user , int(course_id), chat_id)
-        print( oi , file=sys.stderr)
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:%d}), (chat:ChatInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(chat)" % (user , int(course_id), chat_id))
     
     def addDatabase(graph, user, course_id, data_id):
@@ -113,7 +115,9 @@ class Course(BaseModel):
     def addQuiz(graph, user, course_id, quiz_id):
         return graph.run("MATCH (u:User {email:'%s'})-[r]-(a:Network)-[r2]-(course:Course{id:%s}), (quiz:QuizInstance{uuid: '%s'}) CREATE (course)-[:HAS_INSTANCE]->(quiz)" % (user , course_id, quiz_id))
 
-
+    def delete_by_user(graph, user, id):
+        return graph.run("Match (p:User{email:'%s'})-[r]-(:Network)-[r2]-(course:Course{id:%s}) DETACH DELETE course " % (user, id))
+        
 class SubNetwork(BaseModel):
 
     __primarykey__ = 'uuid'
@@ -129,8 +133,6 @@ class SubNetwork(BaseModel):
 
     def fetch_by_id(graph, user, id, sub_id):
         query = "Match (p:User{email:'%s'})-[r1]-(activity:Network{id:'%s'})-[r2]-(sub:SubNetwork{uuid:'%s'}) return sub " % (user, id, sub_id)
-        print( query )
-        print(" ============ ")
         return graph.evaluate( query )
 
 class Quiz(BaseModel):
@@ -153,8 +155,6 @@ class Quiz(BaseModel):
     allow_end_date = Property()
     
     def fetch_all_by_user(graph, email, activity, offset, limit):
-        print("Match (p:User{email:'%s'})-[r]-(activity:Network{id:'%s'})-[r2]-(quiz:Quiz) return quiz SKIP %s LIMIT %s" % (email, activity, offset, limit))
-        print("___________________________")
         return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Network{id: '%s'})-[r2]-(quiz:Quiz) return quiz SKIP %s LIMIT %s" % (email, activity, offset, limit)).data()
 
 class QuizInstance(BaseModel):
@@ -482,6 +482,8 @@ class Network(BaseModel):
 
     id = Property()
     name = Property()
+    token = Property()
+    url = Property()
     course_id = Property()
     course_source = Property()
     plataform = Property()
@@ -489,6 +491,9 @@ class Network(BaseModel):
     
     attachment = RelatedTo(User)
     subNetworks = RelatedTo(SubNetwork)
+
+    def get_length(graph, user):
+        return graph.run("MATCH (p:User{email:'%s'})-[r]-(net:Network) return COUNT(DISTINCT net) as total" % user).data()
 
     def getActivity(graph, user, activity_uuid, activity_type):
         return graph.run( f"MATCH (u:User {{email:'{user}'}})-[r]-(:Network)-[:HAS_QUESTIONS]-\
