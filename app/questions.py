@@ -74,7 +74,7 @@ def resources_get(db: Graph):
     questions = db.run("MATCH (p:User{email:'%s'})-[r1]-(a:Network{id:'%s'})-[r:HAS_RESOURCE]-(resource{uuid: '%s'}) return resource" % (current_user, network_id, uuid)).data()
     return jsonify(questions)
 
-from .modules.controller import make_network
+from .modules.controller import make_network, registerCourse
 import re
 
 @start_controller.route('/network/import', methods=['POST'])
@@ -143,7 +143,7 @@ def import_network(db: Graph):
                 create_wiki( db, current_user, wiki['name'], description, result_network.id,\
                     wiki['id'], wiki['course'], url_base, token )
             
-            create_course(db, current_user, result_network.id, course_name, course_name)
+            registerCourse(db, course_id, result_network.id, current_user, result['courses'][0]['fullname'], result['courses'][0]['shortname'])
 
             return jsonify({'message': 'Rede importada'}), 200
 

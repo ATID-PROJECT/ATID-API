@@ -8,18 +8,19 @@ install:
 - pip install pipenv
 - pipenv install --system
 - pipenv install --dev --system
+addons:
+  ssh_known_hosts: atid.imd.ufrn.br
 script:
-- make format
+- python -m unittest discover tests/
 before_install:
-- openssl aes-256-cbc -K $encrypted_f15557c1feb1_key -iv $encrypted_f15557c1feb1_iv -in deploy_key.enc -out deploy_key -d 
+- openssl aes-256-cbc -K $encrypted_dfdcfd5172af_key -iv $encrypted_dfdcfd5172af_iv -in deploy_key.enc -out deploy_key -d
 - eval "$(ssh-agent -s)"
 - chmod 600 ./deploy_key
 - echo -e "Host $SERVER_IP_ADDRESS\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 - ssh-add ./deploy_key
-- scp -r /home/travis/build/ATID-PROJECT/flask-api ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_DIRECTORY}
 deploy:
   provider: script
   skip_cleanup: true
-  script: ssh ${DEPLOY_USER}@${DEPLOY_HOST} "cd ${DEPLOY_DIRECTORY}/flask-api/; bash deploy.sh"
+  script: ssh ${DEPLOY_USER}@${DEPLOY_HOST} "cd ${DEPLOY_DIRECTORY}/ATID-API/; bash deploy.sh"
   on:
     branch: master

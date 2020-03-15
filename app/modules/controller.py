@@ -249,9 +249,7 @@ def create_course(db, current_user, network_id, fullname, shortname):
         all_questions = db.run("MATCH (p:User{email:'%s'})-[r1]-(net:Network{id:'%s'})-[r2:HAS_QUESTIONS]-(q) return q" % (current_user, network_id)).data()
 
         result = createCourse(network['url'], network['token'], fullname, shortname, db, network_id, current_user)
-        print(result, file=sys.stderr)
         id_course = result['id']
-        print('|||||========================||||', file=sys.stderr)
         
         for question in all_questions:
             item = dict(question['q'])
