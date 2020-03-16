@@ -31,7 +31,7 @@ from .database import sqlite_db
 from flask_restful import Api
 from py2neo import Graph
 
-from .questions import ExternToolResource, WikiResource, GlossarioResource, ForumResource, PageResource, URLResource, FileResource, ConditionResource, QuizResource, ChatResource, LessonResource, DatabaseResource, ChoiceResource
+from .views import ExternToolResource, WikiResource, GlossarioResource, ForumResource, PageResource, URLResource, FileResource, ConditionResource, QuizResource, ChatResource, LessonResource, DatabaseResource, ChoiceResource
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 

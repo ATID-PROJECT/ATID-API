@@ -1,4 +1,5 @@
-from app.views import createLog, get_enrolled
+from app.modules.general.course import get_enrolled
+from app.logManager import createLog
 
 import sys
 import hashlib
