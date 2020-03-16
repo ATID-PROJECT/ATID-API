@@ -10,8 +10,6 @@ install:
 - pipenv install --dev --system
 addons:
   ssh_known_hosts: atid.imd.ufrn.br
-script:
-- coverage run -m pytest
 before_install:
 - openssl aes-256-cbc -K $encrypted_dfdcfd5172af_key -iv $encrypted_dfdcfd5172af_iv -in deploy_key.enc -out deploy_key -d
 - eval "$(ssh-agent -s)"
