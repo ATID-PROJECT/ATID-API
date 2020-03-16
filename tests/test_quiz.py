@@ -1,8 +1,7 @@
 # test_quiz.py
 import unittest
-import os
-import json
 from app import create_app
+
 
 class QuizTestCase(unittest.TestCase):
     """This class represents the quiz test case"""
