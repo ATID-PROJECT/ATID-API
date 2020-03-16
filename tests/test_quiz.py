@@ -22,6 +22,9 @@ class QuizTestCase(unittest.TestCase):
             "id_network": ""
         }
 
+    def teste_example(self):
+        return True
+
 
 # Make the tests conveniently executable
 if __name__ == "__main__":

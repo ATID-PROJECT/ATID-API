@@ -28,6 +28,7 @@ pytest-cov = "*"
 autoflake = "*"
 requests = "*"
 pendulum = "*"
+coverage = "*"
 
 [requires]
 python_version = "3.6"
