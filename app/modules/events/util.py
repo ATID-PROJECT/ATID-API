@@ -65,7 +65,8 @@ def addUserToGroup(url_base, token, id_user, id_group):
 
     final_url = str( url_base + "/" +(str(settings.URL_MOODLE).format(str(token), function+params)))
 
-   
+    print(final_url, file=sys.stderr)
+    print("=----------------", file=sys.stderr)
     r = requests.post( final_url, data={}, verify=False)
 
     result = r.json()

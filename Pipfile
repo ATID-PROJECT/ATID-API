@@ -29,6 +29,7 @@ autoflake = "*"
 requests = "*"
 pendulum = "*"
 coverage = "*"
+uwsgi = "*"
 
 [requires]
 python_version = "3.6"

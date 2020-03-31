@@ -3,6 +3,7 @@ from app.database import sqlite_db
 import os
 import sys
 from .modules import *
+from .sqlite_models import NetworkUserLog
 
 def createLog(current_user, network_id, description):
 

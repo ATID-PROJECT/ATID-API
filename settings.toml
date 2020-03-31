@@ -17,7 +17,6 @@ HOST_URL = 'localhost'
 LHOST = 'http://atid.imd.ufrn.br:7473'
 LPORT = '3306'
 ENABLE_SEND_EMAIL = true
-SQLALCHEMY_DATABASE_URI = 'sqlite:////root/projects/ATID-API/app.db'
 
 URL_MOODLE = "webservice/rest/server.php?wstoken={0}&wsfunction={1}&moodlewsrestformat=json"
 
