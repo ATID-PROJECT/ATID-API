@@ -3,15 +3,17 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import Table, Column, Integer, ForeignKey, String, DateTime, Boolean, Text
 from app.base.CustomBase import CustomBase
 
-class NetworkUserLog(CustomBase):
+from app.database import sqlite_db
+
+class NetworkUserLog(sqlite_db.Model):
     __tablename__ = 'user_log'
 
     id = Column(Integer,primary_key=True,autoincrement=True)
-    user_id = Column(Integer)
-    network_id = Column(Text)
-    description = Column(Text)
-    created_on = Column(DateTime)
-    updated_on = Column(DateTime)
+    user_id = Column(sqlite_db.Integer)
+    network_id = Column(sqlite_db.Text)
+    description = Column(sqlite_db.Text)
+    created_on = Column(sqlite_db.DateTime)
+    updated_on = Column(sqlite_db.DateTime)
 
     @property
     def serialize(self):

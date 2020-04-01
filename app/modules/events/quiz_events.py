@@ -60,8 +60,7 @@ def userCompletQuiz(db, id_course, id_quiz, id_user, url_moodle):
                 if not condition or isValid( condition, best_grade ):
      
                     for instance in instances:
-                        print(target_transictions, file=sys.stderr)
-                        print(index, file=sys.stderr)
+                        print(instance, file=sys.stderr)
                         print(target_transictions[index], file=sys.stderr)
                         if checkNextActivity(instance, target_transictions[index]):
 
