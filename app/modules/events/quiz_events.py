@@ -39,39 +39,55 @@ def getBestNote(url_base, token, userid, quizid):
 def userCompletQuiz(db, id_course, id_quiz, id_user, url_moodle):
     try:
         token, target_transictions, transictions, instances = getTransictionsByAny( db, id_course, id_quiz, url_moodle, 'quiz')
-
-        for instance in instances:
-            if 'id_group' in instance:
-                if userHasGroup(url_moodle, token, id_user, instance['id_group']):
-                    #user has already passed the fork
-                    return
+      
         for index, transiction in enumerate(transictions):
+            
+            can_pass = True
+            if 'conditions' in transiction:
+            
+                conditions = transiction['conditions']
+                best_grade = getBestGrade(url_moodle, token, id_user, id_quiz)
+                current_attemp = getUserAttemps(url_moodle, token, id_user, id_quiz)
+                
+                for condition in conditions:
+                    if not condition:
+                        continue
 
-            if not 'conditions' in transiction:
-                break
-
-            conditions = transiction['conditions']
-            best_grade = getBestGrade(url_moodle, token, id_user, id_quiz)
-
-            for condition in conditions:
-                if not condition:
-                    continue
-
-                if not condition or isValid( condition, best_grade ):
-     
-                    for instance in instances:
-                        print(instance, file=sys.stderr)
-                        print(target_transictions[index], file=sys.stderr)
-                        if checkNextActivity(instance, target_transictions[index]):
-
-                            addUserToGroup(url_moodle, token,id_user,instance['id_group'])
-                            return
+                    if isValid( condition, best_grade, current_attemp ):
+                        can_pass = True
+                    else:
+                        can_pass = False
+                        break
+            print("eu sabia------------------", file=sys.stderr)
+            print( can_pass , file=sys.stderr)
+            if can_pass:
+                
+                for instance in instances:
+                    print('iiiiiiiiiiiiiiiiiiiiiii--=======', file=sys.stderr)
+                    if checkNextActivity(instance, target_transictions[index]):
+                        print('aq==-----------------------=======', file=sys.stderr)
+                        addUserToGroup(url_moodle, token,id_user,instance['id_group'])
+                        return
+            #...
 
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
         return 400
+
+def getUserAttemps(url_moodle, token, id_user, id_quiz):
+    
+    function = "get_uset_attemp_external"
+    
+    params = f"&userid={id_user}&quizid={id_quiz}"
+
+    final_url = str( url_base + "/" +(url_moodle.format(token, function+params)))
+    
+    r = requests.post( final_url, data={})
+    result = r.json()
+
+    return result
 
 def getBestGrade(url_moodle, token, id_user, id_quiz):
     
@@ -97,7 +113,7 @@ def validGrade( type_grade, grade, best_grade ):
 
     return result
 
-def isValid( conditions, best_grade ):
+def isValid( conditions, best_grade, current_attemp ):
     try:
         if not 'type' in conditions:
             return True
@@ -115,9 +131,17 @@ def isValid( conditions, best_grade ):
                         return False
                     elif not isValid and type_condition=='and':
                         return False
+
+                elif condition_type == 'check_attemp':
+                    attemps_target = condition['attemps_target']
+                    
+                    if attemps_target >= current_attemp:
+                        break
+                    else:
+                        return False
                 
             elif 'type' in condition:
-                valid = isValid( condition, best_grade )
+                valid = isValid( condition, best_grade, current_attemp )
                 if valid and type_condition=='or':
                     break
                 elif not valid and index == len(conditions['children'])-1 and type_condition=='or':

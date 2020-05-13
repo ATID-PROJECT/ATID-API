@@ -1,5 +1,6 @@
 import sys
 from . import *
+from app.modules.activitys import *
 
 def updateFromMoodle( db, type_item, url_moodle, course_id, item_id ):
     
@@ -22,54 +23,63 @@ def updateFromMoodle( db, type_item, url_moodle, course_id, item_id ):
         pass
 
 def upQuiz( db, url_moodle, course_id, item_id ):
-
-    all_instances = db.run("MATCH (a:Network{url:'%s'})-[r2]-(c:Course{id:%s})-[r3]-(instance:QuizInstance{id_instance:%s}) return instance" % (url_moodle, course_id, item_id)).data()
-
-    result = all_instances[0]['instance']
-
-    uuid = result["id_quiz"]
-
-    quiz = db.run( f"MATCH (a:Network{{url:'{url_moodle}'}})-[r:HAS_QUESTIONS]-(quiz:Quiz{{uuid:'{uuid}'}}) return quiz").data()        
-    network = db.run( f"MATCH (network:Network{{url:'{url_moodle}'}})-[r:HAS_QUESTIONS]-(quiz:Quiz{{uuid:'{uuid}'}}) return network").data()[0]['network']
-
-    quiz_updated = getQuiz( network['url'], network['token'], course_id, item_id )
-    print(str(quiz_updated), file=sys.stderr)
-    name = quiz_updated["name"]
-    description = quiz_updated["description"]
-    time_limit = quiz_updated["time_limit"]
-    open_date = quiz_updated["timeopen"]
-    end_date  = quiz_updated["timeclose"]
-    new_page = quiz_updated["new_page"]
-    shuffle = quiz_updated["shuffleanswers"]
-    allow_time_limit = True if time_limit and len(time_limit)>0 else False
-    allow_open_date = True if open_date and len(open_date)>0 else False
-    allow_end_date = True if end_date and len(end_date)>0 else False
-
-    query = f"MATCH (a:Network{{url:'{url_moodle}'}})-[r:HAS_QUESTIONS]-(quiz:Quiz{{uuid:'{uuid}'}}) \
-            SET quiz.name = '{name}',\
-        quiz.description = '{description}',\
-        quiz.time_limit = '{time_limit}',\
-        quiz.open_date = '{open_date}',\
-        quiz.end_date  = '{end_date}',\
-        quiz.new_page = '{new_page}',\
-        quiz.allow_time_limit = '{allow_time_limit}',\
-        quiz.allow_open_date = '{allow_open_date}',\
-        quiz.allow_end_date = '{allow_end_date}',\
-        quiz.shuffle = '{shuffle}' return quiz"
     
-    db.run(query).data()
+    try:
+        all_instances = db.run("MATCH (a:Network{url:'%s'})-[r2]-(c:Course{id:%s})-[r3]-(instance:QuizInstance{id_instance:%s}) return instance" % (url_moodle, course_id, item_id)).data()
 
-    uuid_quiz = quiz[0]['quiz']['uuid']
-    
-    all_instances = db.run("MATCH (instance:QuizInstance{id_quiz: '%s'}) return instance" % (uuid_quiz)).data()
-    
-    #atualizar todas 'turmas' já criadas
-    
-    for instance in all_instances:
+        result = all_instances[0]['instance']
 
-        result = instance['instance']
-        if result['id_instance'] != item_id:
-            updateQuiz(network['url'], network['token'], result['id_instance'], name, description, open_date, end_date )
+        uuid = result["id_quiz"]
+        print(uuid, file=sys.stderr)
+        quiz = db.run( f"MATCH (a:Network{{url:'{url_moodle}'}})-[r:HAS_QUESTIONS]-(quiz:Quiz{{uuid:'{uuid}'}}) return quiz").data()        
+        network = db.run( f"MATCH (network:Network{{url:'{url_moodle}'}})-[r:HAS_QUESTIONS]-(quiz:Quiz{{uuid:'{uuid}'}}) return network").data()[0]['network']
+
+        quiz_updated = getQuiz( network['url'], network['token'], course_id, item_id )
+        
+        name = quiz_updated["name"]
+        description = quiz_updated["description"]
+        time_limit = quiz_updated["time_limit"]
+        open_date = quiz_updated["timeopen"]
+        end_date  = quiz_updated["timeclose"]
+        new_page = quiz_updated["new_page"]
+        shuffle = quiz_updated["shuffleanswers"]
+        allow_time_limit = True if time_limit and len(time_limit)>0 else False
+        allow_open_date = True if open_date and len(open_date)>0 else False
+        allow_end_date = True if end_date and len(end_date)>0 else False
+
+        query = f"MATCH (a:Network{{url:'{url_moodle}'}})-[r:HAS_QUESTIONS]-(quiz:Quiz{{uuid:'{uuid}'}}) \
+                SET quiz.name = '{name}',\
+            quiz.description = '{description}',\
+            quiz.time_limit = '{time_limit}',\
+            quiz.open_date = '{open_date}',\
+            quiz.end_date  = '{end_date}',\
+            quiz.new_page = '{new_page}',\
+            quiz.allow_time_limit = '{allow_time_limit}',\
+            quiz.allow_open_date = '{allow_open_date}',\
+            quiz.allow_end_date = '{allow_end_date}',\
+            quiz.shuffle = '{shuffle}' return quiz"
+        
+        db.run(query).data()
+
+        uuid_quiz = quiz[0]['quiz']['uuid']
+        
+        all_instances = db.run("MATCH (instance:QuizInstance{id_quiz: '%s'}) return instance" % (uuid_quiz)).data()
+        
+        #atualizar todas 'turmas' já criadas
+        
+        for instance in all_instances:
+
+            result = instance['instance']
+            if result['id_instance'] != item_id:
+                updateQuiz(network['url'], network['token'], result['id_instance'], name, description, open_date, end_date )
+
+    except Exception as e:
+        print('===========', file=sys.stderr)
+        print(str(e), file=sys.stderr)
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
+        return 400
 
 def upWiki( db, url_moodle, course_id, item_id ):
     

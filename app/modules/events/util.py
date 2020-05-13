@@ -82,6 +82,58 @@ def checkNextActivity(instance, target_uuid):
     return result
 
 
+
+def getTransictionsByAny2(db, id_course, id_quiz, url_moodle, type_table):
+    table = str(type_table).capitalize()
+
+    target_transiction_list = []
+    target_activity_list = []
+    target_connection_list = []
+
+    all_instances = db.run( f"MATCH (a:Network{{url:'{url_moodle}'}})-[r2]-(c:Course{{id:{id_course}}})-[r3]-(instance:{table}Instance{{id_instance:{id_quiz}}}) return instance").data()
+    result = all_instances[0]['instance']
+    uuid = result[f"id_{table.lower()}"]
+    
+    network = db.run( f"MATCH (network:Network{{url:'{url_moodle}'}})-[r:HAS_QUESTIONS]-(quiz:{table}{{uuid:'{uuid}'}}) return network").data()[0]['network']
+
+    all_data = json.loads( network['all_data'])
+
+    for item in all_data:
+        if 'suggestion_uuid' in item and item['suggestion_uuid'] == uuid:
+            target_activity_list.append( item['id'] )
+
+    for item in all_data:
+        if 'source' in item and item['source'] in target_activity_list:
+            target_connection_list.append( item['target'] )
+
+    for item in all_data:
+        if 'id' in item and item['id'] in target_connection_list:
+            target_transiction_list.append( item )
+
+    #secound step (instances)
+    transiction_connection_list = []
+    target_transiction_ids = []
+            
+    target_transiction_list_id = [item['id'] for item in target_transiction_list ]
+    for item in all_data:
+        if 'source' in item and item['source'] in target_transiction_list_id:
+            transiction_connection_list.append( item['target'] )
+
+    for item in all_data:
+        if ('id' in item) and item['id'] in transiction_connection_list:
+            if 'suggestion_uuid' in item:
+                target_transiction_ids.append( item['suggestion_uuid'] )
+            else:
+                target_transiction_ids.append("not_found")
+                
+    all_instances = db.run( f"MATCH (a:Network{{url:'{url_moodle}'}})-[r2]-(c:Course{{id:{id_course}}})-[r3]-(instance) \
+                    WHERE any(prop in ['id_quiz','id_chat'] where instance[prop] in {str(target_transiction_ids)} )\
+                    return distinct instance" ).data()
+
+    target_instances = [instance['instance'] for instance in all_instances]
+
+    return network['token'],target_transiction_ids, target_transiction_list, target_instances
+
 def getTransictionsByAny(db, id_course, id_quiz, url_moodle, type_table):
     table = str(type_table).capitalize()
 
@@ -128,6 +180,7 @@ def getTransictionsByAny(db, id_course, id_quiz, url_moodle, type_table):
     all_instances = db.run( f"MATCH (a:Network{{url:'{url_moodle}'}})-[r2]-(c:Course{{id:{id_course}}})-[r3]-(instance) \
                     WHERE any(prop in ['id_quiz','id_chat'] where instance[prop] in {str(target_transiction_ids)} )\
                     return distinct instance" ).data()
+
     target_instances = [instance['instance'] for instance in all_instances]
 
     return network['token'],target_transiction_ids, target_transiction_list, target_instances

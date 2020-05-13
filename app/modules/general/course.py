@@ -25,15 +25,20 @@ def getCourseByName( url_base, token, course_name ):
     return result
 
 def getUsersByCourse( url_base, token, courseid ):
-    function = "get_users_by_course"
+    try:
+        function = "core_enrol_get_enrolled_users"
+        params = f"&courseid={courseid}"
+        final_url = str( url_base + "/" +(settings.URL_MOODLE.format(token, function+params)))
 
-    params = f"&courseid={courseid}"
-    final_url = str( url_base + "/" +(settings.URL_MOODLE.format(token, function+params)))
+        r = requests.post( final_url, data={} )
 
-    r = requests.post( final_url, data={} )
-    result = r.json()
-
-    return result
+        result = r.json()
+        
+        return result
+    except Exception as e:
+        print("[[[[[[[[[[[[[[[[[================",file=sys.stderr)
+        print( str(e), file=sys.stderr)
+        return None
 
 def get_enrolled(db, current_user, network_id, course_id):
     network = db.run(

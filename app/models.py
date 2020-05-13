@@ -197,6 +197,8 @@ class Quiz(BaseModel):
     allow_open_date = Property()
     allow_end_date = Property()
 
+    has_trigged = Property()
+
     def fetch_all_by_user(graph, email, activity, offset, limit):
         return graph.run(
             "Match (p:User{email:'%s'})-[r]-(activity:Network{id: '%s'})-[r2]-(quiz:Quiz) return quiz SKIP %s LIMIT %s" %

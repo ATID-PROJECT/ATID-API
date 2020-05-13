@@ -24,7 +24,7 @@ def createQuiz(url_base, token, course_id, name, description, group_id):
 
     return result
 
-def updateQuiz(url_base, token, quiz_id, name, description):
+def updateQuiz(url_base, token, quiz_id, name, description, open_date='', end_date=''):
     
     function = "update_quiz"
     params = f"&quiz_id={quiz_id}&name={name}&description={description}"

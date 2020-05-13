@@ -29,6 +29,8 @@ from flask_restful import Resource
 from app.logManager import createLog
 import urllib.request, json 
 from app.models import *
+from .modules.general.quiz_status import getQuizStatus
+from .modules.general.attemps_events import getAttempsStatus
 
 from .modules import *
 from .modules.activitys import *
@@ -54,6 +56,50 @@ def index(db: Graph):
     print(host + "...", file=sys.stderr)
     return "API ATID"
 
+@start_controller.route('/activity_analyze')
+@jwt_required
+def activity_analyze(db: Graph):
+    
+    try:
+        current_user = get_jwt_identity()
+
+        course_id = request.args.get("course_id")
+        network_id = request.args.get("network_id")
+        activity_id = request.args.get("activity_id")
+        
+        quiz_info = "MATCH (c:Course)-[]-(n) where c.id = {} and n.id_quiz='{}' return n".format(course_id, activity_id)
+        id_quiz = db.run( quiz_info ).data()[0]['n']['id_instance']
+        quiz_instance = db.run("MATCH (c:Course)-[r]-(n:QuizInstance) where n.id_quiz='%s' and c.id=%s RETURN n" % (activity_id,course_id)).data()[0]['n']
+
+        network = db.run("MATCH (p:User{email:'%s'})-[r1]-(net:Network{id:'%s'}) return net" % (current_user, network_id)).data()[0]['net']
+
+        result = getQuizStatus( network['url'], network['token'], course_id, quiz_instance['id_instance'])
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify([])
+
+@start_controller.route('/attemps_analyze')
+@jwt_required
+def attemps_analyze(db: Graph):
+    try:
+        current_user = get_jwt_identity()
+
+        course_id = request.args.get("course_id")
+        network_id = request.args.get("network_id")
+        activity_id = request.args.get("activity_id")
+        
+        quiz_info = "MATCH (c:Course)-[]-(n) where c.id = {} and n.id_quiz='{}' return n".format(course_id, activity_id)
+        id_quiz = db.run( quiz_info ).data()[0]['n']['id_instance']
+        quiz_instance = db.run("MATCH (c:Course)-[r]-(n:QuizInstance) where n.id_quiz='%s' and c.id=%s RETURN n" % (activity_id,course_id)).data()[0]['n']
+
+        network = db.run("MATCH (p:User{email:'%s'})-[r1]-(net:Network{id:'%s'}) return net" % (current_user, network_id)).data()[0]['net']
+        
+        result = getAttempsStatus( network['url'], network['token'], course_id, quiz_instance['id_instance'])
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify([])
 
 @start_controller.route('/get_enrolled_users', methods=['GET', 'POST'])
 @jwt_required
@@ -1005,6 +1051,7 @@ class QuizResource(Resource):
         uuid = generateUUID()
 
         quiz = Quiz()
+        quiz.has_trigged = 'False'
         quiz.uuid = uuid
         quiz.name = dataDict["name"]
         quiz.label = "quiz"
@@ -1143,6 +1190,7 @@ def create_quiz( db, current_user, quiz_name, quiz_description, quiz_network_id,
 
     quiz = Quiz()
     quiz.uuid = uuid
+    quiz.has_trigged = 'False'
     quiz.label = "quiz"
     quiz.name = quiz_name
     quiz.description = quiz_description

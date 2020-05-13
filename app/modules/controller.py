@@ -1,4 +1,4 @@
-from app.modules.general.course import get_enrolled
+from app.modules.general.course import get_enrolled, getUsersByCourse
 from app.logManager import createLog
 
 import sys
@@ -335,20 +335,27 @@ def updateQuestion(db: Graph):
 
     if request.method == "PUT":
         
-        url_parts = parse.urlparse(request.form['url_item'])
+        try:
+            url_parts = parse.urlparse(request.form['url_item'])
 
-        type_item = request.form['type_item']
-        id_item = request.form['id_item']
-        url_item = f"{url_parts.scheme}://{url_parts.netloc}"
-        id_course = request.form['id_course']
+            type_item = request.form['type_item']
+            id_item = request.form['id_item']
+            url_item = f"{url_parts.scheme}://{url_parts.netloc}"
+            id_course = request.form['id_course']
 
-        updateFromMoodle( db, type_item, url_item, id_course, id_item)
+            updateFromMoodle( db, type_item, url_item, id_course, id_item)
 
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
+            return 400
     return ""
 
 def get_user( url, token, id ):
     function = "core_user_get_users_by_field"
 
+    print( f"{url}/{url_moodle.format( token, function)}&field=id&values[0]={id}", file=sys.stderr )
     with urllib.request.urlopen(\
         f"{url}/{url_moodle.format( token, function)}&field=id&values[0]={id}" ) as url:
         data = json.loads(url.read().decode())
@@ -363,6 +370,51 @@ def get_user( url, token, id ):
             'email': data[0]['email'],
             'profileimageurl': data[0]['profileimageurl'],
         }
+
+from app.database import db
+
+
+
+def quiz_dates():
+    try:
+        not_trigged = db.run("""
+        MATCH (q:Quiz)
+        RETURN q
+        """).data()
+        
+        for nt in not_trigged:
+            trigger = nt['q']
+        
+            db.run("""
+            MATCH (q:Quiz)
+            WHERE q.uuid = '{}'
+            SET q.has_trigged = 'True'
+            RETURN q
+            """.format(trigger['uuid']))
+
+            if 'open_date' in trigger and datetime.datetime.strptime( trigger['open_date'], '%Y-%m-%d %H:%M:%S') <= datetime.datetime.now()\
+                and 'allow_open_date' in trigger and trigger['allow_open_date'] == 'True':
+                network = db.run("MATCH (n:Network)-[]-(:Quiz{{uuid: '{0}' }}) RETURN n".format(trigger['uuid']) ).data()[0]['n']
+                quiz_instance = db.run("MATCH (qi:QuizInstance) WHERE qi.id_quiz = '{0}' RETURN qi".format(trigger['uuid'])).data()[0]['qi']
+                courses = db.run( "MATCH (n:Network)-[]-(c:Course) WHERE n.id = '{0}' RETURN c".format(network['id']) ).data()
+
+                for c in courses:
+                    course = c['c']
+                    
+                    users = getUsersByCourse( network['url'], network['token'], int( course['id']  ))
+                    
+                    if users != None:
+                        for u in users:
+                            if 'id' in u:
+                                userCompletQuiz(db, int( course['id'] ), int(quiz_instance['id_instance']), int(u['id']), network['url'])
+
+                    #suggestion_uuid
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print("¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨$$$$$$$$$$$$$$$$$$$$", file=sys.stderr)
+        print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
+        return 400
 
 @account_controller.route('/moodle/students/') 
 @jwt_required
@@ -395,12 +447,12 @@ def getStudents(db: Graph):
     with urllib.request.urlopen(\
         f"{result['url']}/{url_moodle.format( result['token'] , function)}&groupids[0]={activity['id_group']}" ) as url:
         data = json.loads(url.read().decode())
-        
+
         if 'exception' in data:
             return jsonify({"message": "`url` e `token` inválidos.", "status": 400}), 400
         
         for user_id in data[0]['userids']:
-            print(user_id, file=sys.stderr)
+
             user = get_user(result['url'],result['token'], user_id)
             if user:
                 all_users.append( user )
