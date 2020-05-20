@@ -36,6 +36,39 @@ def getBestNote(url_base, token, userid, quizid):
 
     return result
 
+def eventOpenQuiz(db, id_course, id_quiz, id_user, url_moodle):
+    try:
+        token, target_transictions, transictions, instances = getTransictionsByAny2( db, id_course, id_quiz, url_moodle, 'quiz')
+      
+        for index, transiction in enumerate(transictions):
+            
+            can_pass = True
+            if 'conditions' in transiction:
+            
+                conditions = transiction['conditions']
+                best_grade = getBestGrade(url_moodle, token, id_user, id_quiz)
+
+                current_attemp = getUserAttemps(url_moodle, token, id_user, id_quiz)
+                for condition in conditions:
+                    if not condition:
+                        continue
+
+                    if isValid( condition, best_grade, current_attemp ):
+                        can_pass = True
+                    else:
+                        can_pass = False
+                        break
+            if can_pass:
+                for instance in instances:
+                    if checkNextActivity(instance, target_transictions[index]):
+                        addUserToGroup(url_moodle, token,id_user,instance['id_group'])
+                        return
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
+        return 400
+
 def userCompletQuiz(db, id_course, id_quiz, id_user, url_moodle):
     try:
         token, target_transictions, transictions, instances = getTransictionsByAny( db, id_course, id_quiz, url_moodle, 'quiz')
@@ -47,8 +80,8 @@ def userCompletQuiz(db, id_course, id_quiz, id_user, url_moodle):
             
                 conditions = transiction['conditions']
                 best_grade = getBestGrade(url_moodle, token, id_user, id_quiz)
+
                 current_attemp = getUserAttemps(url_moodle, token, id_user, id_quiz)
-                
                 for condition in conditions:
                     if not condition:
                         continue
@@ -58,17 +91,11 @@ def userCompletQuiz(db, id_course, id_quiz, id_user, url_moodle):
                     else:
                         can_pass = False
                         break
-            print("eu sabia------------------", file=sys.stderr)
-            print( can_pass , file=sys.stderr)
             if can_pass:
-                
                 for instance in instances:
-                    print('iiiiiiiiiiiiiiiiiiiiiii--=======', file=sys.stderr)
                     if checkNextActivity(instance, target_transictions[index]):
-                        print('aq==-----------------------=======', file=sys.stderr)
                         addUserToGroup(url_moodle, token,id_user,instance['id_group'])
                         return
-            #...
 
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -76,12 +103,12 @@ def userCompletQuiz(db, id_course, id_quiz, id_user, url_moodle):
         print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
         return 400
 
-def getUserAttemps(url_moodle, token, id_user, id_quiz):
+def getUserAttemps(url_base, token, id_user, id_quiz):
     
     function = "get_uset_attemp_external"
     
     params = f"&userid={id_user}&quizid={id_quiz}"
-
+    
     final_url = str( url_base + "/" +(url_moodle.format(token, function+params)))
     
     r = requests.post( final_url, data={})

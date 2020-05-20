@@ -373,8 +373,6 @@ def get_user( url, token, id ):
 
 from app.database import db
 
-
-
 def quiz_dates():
     try:
         not_trigged = db.run("""
@@ -406,7 +404,7 @@ def quiz_dates():
                     if users != None:
                         for u in users:
                             if 'id' in u:
-                                userCompletQuiz(db, int( course['id'] ), int(quiz_instance['id_instance']), int(u['id']), network['url'])
+                                eventOpenQuiz(db, int( course['id'] ), int(quiz_instance['id_instance']), int(u['id']), network['url'])
 
                     #suggestion_uuid
     except Exception as e:

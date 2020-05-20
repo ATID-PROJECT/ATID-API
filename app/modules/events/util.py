@@ -22,20 +22,18 @@ def userHasGroup(url_base, token, userid, groupid):
     return False
 
 def getNextActivity(db, url_host, id_course, current_id):
-    
+
     target_modules = []
     target_transictions = []
 
     network = db.run( f"MATCH (network:Network{{url:'{url_host}'}})-[r2]-(c:Course{{id:{id_course}}}) return network").data()[0]['network']
-    
     all_data = json.loads( network['all_data'] )
 
     for item in all_data:
         
         if 'source' in item and item['source'] == current_id:
-            
             target_transictions.append( item['target'] )
-
+    
     for transiction in target_transictions:
         for item in all_data:
             if 'source' in item and item['source'] == transiction:
@@ -65,8 +63,6 @@ def addUserToGroup(url_base, token, id_user, id_group):
 
     final_url = str( url_base + "/" +(str(settings.URL_MOODLE).format(str(token), function+params)))
 
-    print(final_url, file=sys.stderr)
-    print("=----------------", file=sys.stderr)
     r = requests.post( final_url, data={}, verify=False)
 
     result = r.json()
@@ -93,6 +89,7 @@ def getTransictionsByAny2(db, id_course, id_quiz, url_moodle, type_table):
     all_instances = db.run( f"MATCH (a:Network{{url:'{url_moodle}'}})-[r2]-(c:Course{{id:{id_course}}})-[r3]-(instance:{table}Instance{{id_instance:{id_quiz}}}) return instance").data()
     result = all_instances[0]['instance']
     uuid = result[f"id_{table.lower()}"]
+    next_activity = ""
     
     network = db.run( f"MATCH (network:Network{{url:'{url_moodle}'}})-[r:HAS_QUESTIONS]-(quiz:{table}{{uuid:'{uuid}'}}) return network").data()[0]['network']
 
@@ -100,7 +97,18 @@ def getTransictionsByAny2(db, id_course, id_quiz, url_moodle, type_table):
 
     for item in all_data:
         if 'suggestion_uuid' in item and item['suggestion_uuid'] == uuid:
-            target_activity_list.append( item['id'] )
+            next_activity = item['id']
+            break
+
+    """ pegar transição conectada ao quiz aberto """
+    source_transiction = ""
+    for item in all_data:
+        if item['type'] == 'custom:connection' and item['target'] == next_activity:
+            source_transiction = item['source']
+
+    for item in all_data:
+        if item['type'] == 'custom:connection' and item['target'] == source_transiction:
+            target_activity_list.append( item['source'] )
 
     for item in all_data:
         if 'source' in item and item['source'] in target_activity_list:
