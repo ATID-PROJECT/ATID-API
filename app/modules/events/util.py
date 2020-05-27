@@ -11,7 +11,6 @@ def userHasGroup(url_base, token, userid, groupid):
     params = f"&groupids[0]={groupid}"
     
     final_url = str( url_base + "/" + str(url_moodle.format(token, function+params)))
-    print(str(final_url), file=sys.stderr)
     r = requests.post( final_url, data={})
     result = r.json()
 
@@ -20,6 +19,18 @@ def userHasGroup(url_base, token, userid, groupid):
             return True
 
     return False
+
+
+def getGroupUsers(url_base, token, groupid):
+    function = "core_group_get_group_members"
+    
+    params = f"&groupids[0]={groupid}"
+    
+    final_url = str( url_base + "/" + str(url_moodle.format(token, function+params)))
+    r = requests.post( final_url, data={})
+    result = r.json()
+
+    return result[0]['userids']
 
 def getNextActivity(db, url_host, id_course, current_id):
 
@@ -77,9 +88,37 @@ def checkNextActivity(instance, target_uuid):
 
     return result
 
+def getPrevNodes( db, uuid, network, type_table):
+    
+    table = str(type_table).capitalize()
+    
+    all_data = json.loads( network['all_data'])
+    target_transiction = []
+    target_activity_list = []
+    target_quiz = ""
+    
+    for item in all_data:
+        if 'suggestion_uuid' in item and item['suggestion_uuid'] == uuid:
+            target_quiz = item['id']
+            break
 
+    for item in all_data:
+        if item['type'] == 'custom:connection' and item['target'] == target_quiz:
+            target_transiction.append( item['source'] )
+
+    for item in all_data:
+        if 'target' in item and item['target'] in target_transiction:
+            target_activity_list.append( item['source'] )
+    
+    target_connection_list = []
+    for item in all_data:
+        if 'id' in item and item['id'] in target_activity_list:
+            if 'suggestion_uuid' in item:
+                target_connection_list.append( item['suggestion_uuid'] )
+    return target_connection_list
 
 def getTransictionsByAny2(db, id_course, id_quiz, url_moodle, type_table):
+
     table = str(type_table).capitalize()
 
     target_transiction_list = []

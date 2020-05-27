@@ -21,6 +21,7 @@ from app.models import *
 import random
 import string
 from py2neo import Relationship, Node
+from .events.util import getGroupUsers, getPrevNodes
 
 from .updateActivitys import updateFromMoodle
 from urllib import parse
@@ -399,18 +400,26 @@ def quiz_dates():
                 for c in courses:
                     course = c['c']
                     
-                    users = getUsersByCourse( network['url'], network['token'], int( course['id']  ))
-                    
-                    if users != None:
-                        for u in users:
-                            if 'id' in u:
-                                eventOpenQuiz(db, int( course['id'] ), int(quiz_instance['id_instance']), int(u['id']), network['url'])
+                    old_nodes = getPrevNodes( db, trigger['uuid'], network, 'quiz')
+                    for suggestion in old_nodes:
+                        node1 = db.run("MATCH (qi:QuizInstance) WHERE qi.id_quiz = '{0}' RETURN qi".format(suggestion)).data()
+                        node2 = db.run("MATCH (qi:ChatInstance) WHERE qi.id_chat = '{0}' RETURN qi".format(suggestion)).data()
+
+                        node = None
+                        if node1 != None and len(node1) > 0:
+                            node = node1[0]['qi']
+                        else:
+                            node = node2[0]['qi']
+                        users = getGroupUsers( network['url'], network['token'], int( node['id_group']  ))
+
+                        if users != None:
+                            for user_id in users:
+                                eventOpenQuiz(db, int( course['id'] ), int(quiz_instance['id_instance']), int(user_id), network['url'])
 
                     #suggestion_uuid
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print("¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨$$$$$$$$$$$$$$$$$$$$", file=sys.stderr)
         print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
         return 400
 
