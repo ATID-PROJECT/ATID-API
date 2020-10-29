@@ -167,9 +167,7 @@ def import_network(db: Graph):
     course_name = dataDict['course_name']
 
     result = getCourseByName(url_base, token, course_name)
-    print(result, file=sys.stderr)
     try:
-
         if('courses' in result and len(result['courses']) > 0 ):
             #criar rede
             course_id = result['courses'][0]['id']
@@ -184,6 +182,9 @@ def import_network(db: Graph):
             all_glossaries = getGlossariesByCourse(url_base, token, course_id)
             all_quizzes = getQuizzestByCourse(url_base, token, course_id)
             all_wikis = getWikisByCourse(url_base, token, course_id)
+
+            bpmn_data = import_bpmn_activitys(all_quizzes)
+            Network.update_by_user(db, current_user, result_network.id, bpmn_data, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
             #importar atividades
             for chat in all_chats['chats']:
@@ -229,11 +230,64 @@ def import_network(db: Graph):
         else:
             return jsonify({}), 404
     except Exception as e:
-        print('error===========================', file=sys.stderr)
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print(exc_type, fname, exc_tb.tb_lineno, file=sys.stderr)
         return 'error', 400
+
+def import_bpmn_activitys( all_quizzes ):
+    
+    quizzes = sorted(all_quizzes['quizzes'], key=lambda x: x['timelimit'], reverse=True)
+    quizzes_group = []
+
+    index_reference = -1
+    for index, quiz in enumerate(quizzes):
+        if index == 0 or quiz['timelimit'] > quizzes[index-1]['timelimit']:
+            index_reference+=1
+            quizzes_group.append([quiz])
+        else:
+            quizzes_group[index_reference].append(quiz)
+
+    data_bpmn = """{"type":"custom:start","id":"custom:start_0","name":"Início","x":70,"y":30},"""
+    x = 70
+    y = 30
+    global_activity_index = 1
+    global_connection_index = 1
+    for group_index, quizzes in enumerate(quizzes_group):
+        x += 200
+        y = 30-(len(quizzes) * 80)/2
+        for index, quiz in enumerate(quizzes):
+            data_bpmn += """
+            {"type":"custom:atividadeBasica","id":"custom:atividadeBasica_%d","name":"Atividade %d","activity_count":%d,"x":%d,"y":%d},
+            """ % (global_activity_index, global_activity_index, global_activity_index, x, y)
+            quiz['id'] = f"custom:atividadeBasica_{global_activity_index}"
+            quiz['x'] = x
+            quiz['y'] = y
+            global_activity_index += 1
+            y += 100
+
+            if group_index == 0:
+                data_bpmn += """{"type":"custom:connection","id":"custom:connection_%d",
+                "waypoints":[{"x":110,"y":48},{"x":%d,"y":%d}],"source":"custom:start_0","target":"custom:%s"},
+                """ % (global_connection_index, x, y-82, f"custom:atividadeBasica_{global_activity_index-1}")
+                global_connection_index += 1
+            else:
+                for item in quizzes_group[group_index-1]:
+                    data_bpmn += """{"type":"custom:connection","id":"custom:connection_%d",
+                    "waypoints":[{"x":%d,"y":%d},{"x":%d,"y":%d}],"source":"%s","target":"%s"},
+                    """ % (global_connection_index, item['x'], item['y'], x, y-82, item['id'],f"custom:atividadeBasica_{global_activity_index-1}")
+                    global_connection_index += 1
+
+    if len(quizzes_group) > 0:
+        for item in quizzes_group[len(quizzes_group)-1]:
+            data_bpmn += """{"type":"custom:connection","id":"custom:connection_%d",
+            "waypoints":[{"x":%d,"y":%d},{"x":%d,"y":%d}],"source":"%s","target":"custom:end_0"},
+            """ % (global_connection_index, item['x']+30, item['y']+20, x+200, 48, item['id'])
+            global_connection_index += 1
+
+    data_bpmn += """{"type":"custom:end","id":"custom:end_0","name":"Fim","x":%d,"y":%d}
+    """ % (x+200, 30)
+    return """[%s]""" % data_bpmn
+
 
 @start_controller.route('/courses/getall', methods=['GET'])
 @jwt_required

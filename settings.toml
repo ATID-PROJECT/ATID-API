@@ -9,7 +9,7 @@ EMAIL_SENDER = "flask_start@teste.com"
 
 TYPE_DATABASE = ''
 USER_DATABASE = 'neo4j'
-PASS_DATABASE = 'admin'
+PASS_DATABASE = '123456'
 NAME_DATABASE = ''
 
 HOST_URL = 'localhost'

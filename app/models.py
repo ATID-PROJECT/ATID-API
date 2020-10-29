@@ -1,6 +1,6 @@
 
 from py2neo.ogm import GraphObject, Property, RelatedTo
-
+import sys
 
 class BaseModel(GraphObject):
     """
@@ -674,5 +674,6 @@ class Network(BaseModel):
     def fetch_all_by_user(graph, email, offset, limit, code, name):
         # return graph.run("Match (p:User{email:'%s'})-[r]-(activity:Network)
         # return activity SKIP %s LIMIT %s" % (email, offset, limit)).data()
+        print(f"Match (p:User{{email:'{email}'}})-[r]-(activity:Network) where toLower(activity.id) =~ toLower('.*{code}.*') and toLower(activity.name) =~ toLower('.*{name}.*') return activity SKIP {offset} LIMIT {limit}", file=sys.stderr)
         return graph.run(
-            f"Match (p:User{{email:'{email}'}})-[r]-(activity:Network) where LOWER(activity.id) =~ LOWER('.*{code}.*') and LOWER(activity.name) =~ LOWER('.*{name}.*') return activity SKIP {offset} LIMIT {limit}").data()
+            f"Match (p:User{{email:'{email}'}})-[r]-(activity:Network) where toLower(activity.id) =~ toLower('.*{code}.*') and toLower(activity.name) =~ toLower('.*{name}.*') return activity SKIP {offset} LIMIT {limit}").data()

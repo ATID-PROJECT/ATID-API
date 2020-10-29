@@ -1,32 +1,12 @@
 [[source]]
+name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
-name = "pypi"
+
+[dev-packages]
 
 [packages]
-flask = "*"
-flask-migrate = "*"
-flask-login = "*"
-flask-wtf = "*"
-dynaconf = "*"
-toml = "*"
-htmlmin = "*"
-gunicorn = "*"
-flask-injector = "*"
-flask-jwt-extended = "*"
-flask-cors = "*"
-flask-restful = "*"
-py2neo = {git = "https://github.com/technige/py2neo.git"}
-pytest = "*"
-autopep8 = "*"
-pytest-cov = "*"
-autoflake = "*"
-requests = "*"
-coverage = "*"
-apscheduler = "*"
+psutil = "*"
 
 [requires]
 python_version = "3.6"
-
-[dev-packages]
-pylint = "<2.0.0"

@@ -643,6 +643,7 @@ def getCurrentTime():
 def get_by_id_Network(db: Graph):
     current_user = get_jwt_identity()
     result = Network.fetch_by_id(db, current_user, request.args.get("id"))
+
     return jsonify(result)
 
 @account_controller.route('/users/course/get/id', methods=['GET'])
@@ -661,6 +662,7 @@ def getall_Network(db: Graph):
     size = int(request.args.get("page_size"))
     code = request.args.get("code")
     name = request.args.get("name")
+    
     result = Network.fetch_all_by_user(db, current_user, size*page, size, code, name)
 
     return jsonify(result)
@@ -678,7 +680,18 @@ def create_Network(db: Graph):
     
     return jsonify({"sucess": "activity created.", "name":atividade.id})
 
-def make_network(db, current_user, course_name='', url_moodle=None, token=None, course_id=None):
+@account_controller.route('/users/activity/<string:network_id>/duplicate', methods=['POST'])
+@jwt_required
+def duplicate_Network(db: Graph, network_id):
+    current_user = get_jwt_identity()
+    #dataDict = json.loads(request.data)
+    result = Network.fetch_by_id(db, current_user, network_id)
+    
+    atividade = make_network(db, current_user, course_name=f"{result['name']}_cópia", all_data=result['all_data'])    
+    
+    return jsonify({"sucess": "activity created.", "name":atividade.id})
+
+def make_network(db, current_user, course_name='', url_moodle=None, token=None, course_id=None, all_data=[]):
     user = User.fetch_by_email(db, current_user )
 
     atividade = Network()
@@ -687,7 +700,7 @@ def make_network(db, current_user, course_name='', url_moodle=None, token=None, 
     qt = Network.getQuantity(db, current_user)
     num = str(qt) if qt != 0 else ""
     atividade.name = "Sem título "+num if len(course_name)==0 else course_name
-    atividade.all_data = "[]"
+    atividade.all_data = f"{all_data}"
     if url_moodle:
         atividade.token = token
         atividade.url = url_moodle
