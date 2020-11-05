@@ -69,11 +69,7 @@ def isValid( conditions, num_messages ):
 
                     isValid = num_messages >= int( condition['min_msgs'] )
                     
-                    if isValid and type_condition=='or':
-                        break
-                    elif not isValid and index == len(conditions['children'])-1 and type_condition=='or':
-                        return False
-                    elif not isValid and type_condition=='and':
+                    if not isValid and type_condition=='and':
                         return False
                 
             elif 'type' in condition:
