@@ -380,7 +380,12 @@ def makeCourse(db: Graph):
     has_connected = hasSuccessConnected(db, url_base, network_id, token, current_user)
 
     if has_connected:
-        create_course(db, current_user, network_id, fullname, shortname)
+        course = create_course(db, current_user, network_id, fullname, shortname)
+        course_id = course["id"]
+        query = f"MATCH (p:User{{email:'{current_user}'}})-[r1]-(net:Network{{id:'{network_id}'}}) \
+            SET net.course_id = '{course_id}' return net"
+
+        db.run(query)
         return jsonify({"message": "curso criado com sucesso", "status": 200}), 200
     else:
         return (
@@ -416,6 +421,8 @@ def create_course(db, current_user, network_id, fullname, shortname):
             createQuestion(
                 item, network["url"], network["token"], int(id_course), db, current_user
             )
+
+        return result
 
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
