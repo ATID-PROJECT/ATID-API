@@ -11,7 +11,7 @@ colorama==0.4.3
 coverage==5.1
 dynaconf==2.2.3
 Flask==1.1.2
-Flask-Cors==3.0.8
+Flask-Cors==3.0.9
 Flask-Injector==0.12.3
 Flask-JWT-Extended==3.24.1
 Flask-Login==0.5.0
